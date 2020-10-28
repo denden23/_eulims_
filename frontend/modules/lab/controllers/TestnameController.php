@@ -95,6 +95,48 @@ class TestnameController extends Controller
        }
     }
 
+
+    /**
+     * Creates a new Testname
+     * If creation is successful, the browser will be redirected to the 'testnamemethod/index' page.
+     /*
+        Created By: Bergel T. Cutara
+        Contacts:
+
+        Email: b.cutara@gmail.com
+        Tel. Phone: (062) 991-1024
+        Mobile Phone: (639) 956200353
+
+        Description: This action is performed by the testnamemethod .
+
+     * @return mixed
+     */
+    public function actionCreatebytestnamemethod()
+    {
+        $model = new Testname();
+
+        $post= Yii::$app->request->post();
+        if ($model->load(Yii::$app->request->post())) {
+            $testname = Testname::find()->where(['testName'=> $post['Testname']['testName']])->one();
+
+            if($testname){
+                return $this->redirect(['/lab/testnamemethod']);
+            }else{
+                $model->save();
+                return $this->redirect(['/lab/testnamemethod']);
+            } 
+        }
+
+        if(Yii::$app->request->isAjax){
+            $model->create_time=date("Y-m-d h:i:s");
+            $model->update_time=date("Y-m-d h:i:s");
+            return $this->renderAjax('_form', [
+                'model' => $model,
+            ]);
+       }
+    }
+
+
     public function actionTestname()
     {
         $searchModel = new SampletypetestnameSearch();

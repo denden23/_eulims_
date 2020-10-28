@@ -31,8 +31,7 @@ if (isset($_SERVER['SERVER_NAME'])) {
     $GLOBALS['frontend_base_uri'] = $FrontendBaseURI;
     /********************** Global Configuration Settings **********************/
     $GLOBALS['rstl_id']= 11; //RSTL ID
-    $GLOBALS['api_url']="http://ulimsportal.onelab.ph/api/api/"; //API_URL
+    $GLOBALS['api_url']="https://eulims.onelab.dost.gov.ph/api/"; //API_URL
     $GLOBALS['terminal_id']=1; // Unique Terminal ID for each RSTL Cashier
     /***************************************************************************/
 }
-

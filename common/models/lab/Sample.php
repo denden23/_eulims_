@@ -10,14 +10,12 @@ use Yii;
  * @property int $sample_id
  * @property int $rstl_id
  * @property int $pstcsample_id
- * @property int $package_id
- * @property string $package_name
- * @property string $package_rate
  * @property int $testcategory_id
- * @property int $sample_type_id
+ * @property int $sampletype_id
  * @property string $sample_code
  * @property string $samplename
  * @property string $description
+ * @property string $customer_description
  * @property string $sampling_date
  * @property string $remarks
  * @property int $request_id
@@ -25,15 +23,11 @@ use Yii;
  * @property int $sample_year
  * @property int $active
  * @property int $completed
- * @property int $sample_old_id
-  * @property int $old_request_id
+ * @property int $referral_sample_id
  *
  * @property Analysis[] $analyses
- * @property Sampletype $sampleType
+ * @property Sampletype $sampletype
  * @property Request $request
- * @property Packagelist $package
- * @property Testcategory $testcategory
- * @property TestreportSample[] $testreportSamples
  */
 class Sample extends \yii\db\ActiveRecord
 {
@@ -59,19 +53,15 @@ class Sample extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            //[['rstl_id', 'testcategory_id', 'sample_type_id', 'samplename', 'description', 'sampling_date', 'request_id', 'sample_month', 'sample_year'], 'required'],
-            [['rstl_id', 'sampletype_id', 'samplename', 'description', 'sampling_date', 'request_id', 'sample_month', 'sample_year'], 'required'],
-            [['rstl_id', 'pstcsample_id', 'package_id', 'testcategory_id', 'sampletype_id', 'request_id', 'sample_month', 'sample_year', 'active', 'completed'], 'integer'],
-            [['package_rate'], 'number'],
-            [['description'], 'string'],
+            [['rstl_id', 'sampletype_id', 'samplename', 'customer_description', 'request_id', 'sample_month', 'sample_year'], 'required'],
+            [['rstl_id', 'pstcsample_id', 'testcategory_id', 'sampletype_id', 'request_id', 'sample_month', 'sample_year', 'active', 'completed', 'referral_sample_id'], 'integer'],
+            [['description', 'customer_description'], 'string'],
             [['sampling_date'], 'safe'],
-            [['sample_code'], 'string', 'max' => 20],
-            [['samplename','package_name'], 'string', 'max' => 50],
+            [['sample_code'], 'string', 'max' => 100],
+            [['samplename'], 'string', 'max' => 50],
             [['remarks'], 'string', 'max' => 150],
             [['sampletype_id'], 'exist', 'skipOnError' => true, 'targetClass' => Sampletype::className(), 'targetAttribute' => ['sampletype_id' => 'sampletype_id']],
             [['request_id'], 'exist', 'skipOnError' => true, 'targetClass' => Request::className(), 'targetAttribute' => ['request_id' => 'request_id']],
-            [['package_id'], 'exist', 'skipOnError' => true, 'targetClass' => Packagelist::className(), 'targetAttribute' => ['package_id' => 'package_id']],
-            [['testcategory_id'], 'exist', 'skipOnError' => true, 'targetClass' => Testcategory::className(), 'targetAttribute' => ['testcategory_id' => 'testcategory_id']],
         ];
     }
 
@@ -84,23 +74,20 @@ class Sample extends \yii\db\ActiveRecord
             'sample_id' => 'Sample ID',
             'rstl_id' => 'Rstl ID',
             'pstcsample_id' => 'Pstcsample ID',
-            'package_id' => 'Package ID',
-            'package_name' => 'Package Name',
-            'package_rate' => 'Package Rate',
-            'testcategory_id' => 'Test Category',
+            'testcategory_id' => 'Testcategory ID',
             'sampletype_id' => 'Sample Type',
             'sample_code' => 'Sample Code',
-            'samplename' => 'Sample Name',
+            'samplename' => 'Samplename',
             'description' => 'Description',
+            'customer_description' => 'Customer Description',
             'sampling_date' => 'Sampling Date',
             'remarks' => 'Remarks',
-            'request_id' => 'Request Reference Number',
+            'request_id' => 'Request ID',
             'sample_month' => 'Sample Month',
             'sample_year' => 'Sample Year',
             'active' => 'Active',
             'completed' => 'Completed',
-            'sample_old_id' => 'sample_id',
-            'old_request_id' => 'old_request_id',
+            'referral_sample_id' => 'Referral Sample ID',
         ];
     }
 
@@ -117,10 +104,8 @@ class Sample extends \yii\db\ActiveRecord
      */
     public function getSampletype()
     {
-        //return $this->hasOne(Sampletype::className(), ['sample_type_id' => 'sample_type_id']);
         return $this->hasOne(Sampletype::className(), ['sampletype_id' => 'sampletype_id']);
     }
-
 
     /**
      * @return \yii\db\ActiveQuery

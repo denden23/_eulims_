@@ -91,7 +91,7 @@ if(count($sampletype) > 0){
             'language' => 'en',
             'options' => ['placeholder' => 'Select Request Type','disabled'=>$disabled],
             'pluginOptions' => [
-                'allowClear' => true
+                'allowClear' => false
             ]
         ])->label('Request Type'); ?>
         </div>
@@ -344,7 +344,7 @@ if(count($sampletype) > 0){
                 <div class="input-group">
                     <?php
                     $func = new Functions();
-                    echo $func->GetCustomerList($form, $model, $disabled,'Customer');
+                    echo $func->GetCustomerList($form, $model, true,'Customer');
                     if($disabled){
                         $btnDisp=" disabled='disabled'";
                     }else{
@@ -440,70 +440,6 @@ if(count($sampletype) > 0){
         </div>
     </div>
     <div class="row">
-        <div class="col-sm-6 required">
-        <?php
-            echo $form->field($model,'testcategory_id')->widget(Select2::classname(),[
-                //'data' => $testcategory,
-                'data' => $dataTestcategory,
-                'theme' => Select2::THEME_KRAJEE,
-                //'theme' => Select2::THEME_BOOTSTRAP,
-                'options' => $testcategoryOptions,
-                'pluginOptions' => [
-                    'allowClear' => true,
-                ],
-                'pluginEvents' => [
-                    "change" => "function() {
-                        var testcategoryId = this.value;
-                        var select = $('#erequest-sampletype_id');
-                        select.find('option').remove().end();
-                        if (testcategoryId > 0){
-                            $.ajax({
-                                url: '".Url::toRoute("pstcrequest/get_sampletype")."',
-                                method: 'GET',
-                                data: {testcategory_id:testcategoryId},
-                                success: function (data) {
-                                    var select2options = ".Json::encode($sampletypeOptions).";
-                                    select2options.data = data.data;
-                                    select.select2(select2options);
-                                    select.val(data.selected).trigger('change');
-                                    $('.image-loader').removeClass('img-loader');
-                                },
-                                beforeSend: function (xhr) {
-                                    $('.image-loader').addClass('img-loader');
-                                },
-                                error: function (jqXHR, textStatus, errorThrown) {
-                                    alertWarning.alert(\"<p class='text-danger' style='font-weight:bold;'>Error Encountered!</p>\");
-                                }
-                            });
-                        } else {
-                            //alertWarning.alert(\"<p class='text-danger' style='font-weight:bold;'>No sample type selected!</p>\");
-                            console.log('No test category selected!');
-                            select.val('').trigger('change');
-                        }
-                    }",
-                ],
-            ])->label('Test Category');
-        ?>
-        </div>
-        <div class="col-md-6">
-            <?= $form->field($model, 'sampletype_id')->widget(Select2::classname(), [
-                /*'data' => ArrayHelper::map(Sampletype::find()->all(),'sampletype_id','type'),
-                'language' => 'en',
-                'options' => ['placeholder' => 'Select Sample Type','disabled'=>$disabled],
-                'pluginOptions' => [
-                    'allowClear' => true
-                ],*/
-                'data' => $dataSampletype,
-                'theme' => Select2::THEME_KRAJEE,
-                //'theme' => Select2::THEME_BOOTSTRAP,
-                'options' => $sampletypeOptions,
-                'pluginOptions' => [
-                    'allowClear' => true,
-                ],
-            ])->label('Sample Type'); ?>
-        </div>
-    </div>
-    <div class="row">
         <div class="col-md-12">
         <?php
             $sampleGridColumns = [
@@ -533,10 +469,28 @@ if(count($sampletype) > 0){
                     //'value' => function($data) use ($request){
                     //    return ($request->lab_id == 2) ? "Sampling Date: <span style='color:#000077;'><b>".date("Y-m-d h:i A",strtotime($data->sampling_date))."</b></span>,&nbsp;".$data->description : $data->description;
                     //},
-                   'contentOptions' => [
+                    'contentOptions' => [
                         'style'=>'max-width:180px; overflow: auto; white-space: normal; word-wrap: break-word;'
                     ],
                 ],
+                /*[
+                    'header' => 'Test Category',
+                    'attribute'=>'testcategory_id',
+                    'format' => 'raw',
+                    'enableSorting' => false,
+                    'contentOptions' => [
+                        'style'=>'max-width:180px; overflow: auto; white-space: normal; word-wrap: break-word;'
+                    ],
+                ],
+                [
+                    'header' => 'Sample Type',
+                    'attribute'=>'sampletype_id',
+                    'format' => 'raw',
+                    'enableSorting' => false,
+                    'contentOptions' => [
+                        'style'=>'max-width:180px; overflow: auto; white-space: normal; word-wrap: break-word;'
+                    ],
+                ],*/
             ];
 
             echo GridView::widget([
@@ -704,7 +658,7 @@ if(count($sampletype) > 0){
     </div>
     <div class="row" style="float: right;padding-right: 15px">
         <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['disabled'=>$disabled,'class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary','id'=>'btn-save']) ?>
-        <?= Html::Button('Cancel', ['class' => 'btn btn-default', 'id' => 'modalCancel', 'data-dismiss' => 'modal']) ?>
+        <?= Html::Button('Close', ['class' => 'btn btn-default', 'id' => 'modalCancel', 'data-dismiss' => 'modal']) ?>
     </div>
     <?php ActiveForm::end(); ?>
 </div>
@@ -736,7 +690,7 @@ echo Dialog::widget([
         var modeofrelease = $('#erequest-modeofreleaseids').val();
         var due = $('#erequest-report_due').val();
         var received = $('#erequest-receivedby').val();
-        var test_category = $('#erequest-testcategory_id').val();
+        //var test_category = $('#erequest-testcategory_id').val();
         //var sample_type = $('#erequest-sampletype_id').val();
         //if metro lab
         var met_date1 = $('#erequest-recommended_due_date').val();
@@ -744,7 +698,7 @@ echo Dialog::widget([
         var met_date3 = $('#erequest-est_date_completion').val();
         var met_date4 = $('#erequest-certificate_release_date').val();
 
-        if (request_type == '' || lab == '' || customer == '' || discount == '' || purpose == '' || conforme == '' || request_datetime == '' || modeofrelease == '' || due == '' || received == '' || test_category == '') {
+        if (request_type == '' || lab == '' || customer == '' || discount == '' || purpose == '' || conforme == '' || request_datetime == '' || modeofrelease == '' || due == '' || received == '') {
             alertWarning.alert("<p class='text-danger' style='font-weight:bold;'>Field with * is required!</p>");
             return false;
         } else if (lab == 3 && (met_date1 == '' || met_date2 == '' || met_date3 == '' || met_date4 == '')) {

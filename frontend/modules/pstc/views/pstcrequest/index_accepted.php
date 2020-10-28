@@ -31,7 +31,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'heading'=>'<h3 class="panel-title"><i class="glyphicon glyphicon-book"></i> PSTC Request</h3>',
             'type'=>'primary',
             'after'=>false,
-            'before'=>'List of accepted PSTC request.',
+            'before'=>'List of PSTC request already accepted.',
         ],
         'columns' => [
             //['class' => 'kartik\grid\SerialColumn'],

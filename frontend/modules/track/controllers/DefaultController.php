@@ -5,6 +5,9 @@ namespace frontend\modules\track\controllers;
 use yii\web\Controller;
 use common\models\lab\Request;
 use common\models\lab\RequestSearch;
+use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
+//use yii\filters\AccessRule;
 use Yii;
 
 /**
@@ -16,10 +19,35 @@ class DefaultController extends Controller
      * Renders the index view for the module
      * @return string
      */
-   
+    public function behaviors()
+    {
+        return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'actions' => ['track', 'error','index'],
+                        'allow' => true,
+                    ],
+                    [
+                        'actions' => ['track','logout','index'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
+            'verbs' => [
+                'class' => VerbFilter::className(),
+                'actions' => [
+                    'logout' => ['post'],
+                ],
+            ],
+        ];
+    }
 
     public function actionIndex()
     {
+        
         $model = new Request();
         $post= Yii::$app->request->post();
         if ($model->load(Yii::$app->request->post())) {

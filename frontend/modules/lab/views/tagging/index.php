@@ -54,6 +54,7 @@ $func=new Functions();
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'pjax' => true,
+        'toolbar' => false,
         'pjaxSettings' => ['options' => ['id' => 'kv-pjax-container-products']],
         'panel' => [
                 'type' => GridView::TYPE_PRIMARY,
@@ -80,6 +81,7 @@ $func=new Functions();
 <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'pjax' => true,
+        'toolbar' => false,
         'pjaxSettings' => ['options' => ['id' => 'kv-pjax-container-products']],
         'panel' => [
                 'type' => GridView::TYPE_PRIMARY,

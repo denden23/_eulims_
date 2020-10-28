@@ -19,6 +19,17 @@ $methodlist= ArrayHelper::map(Methodreference::find()->all(),'method_reference_i
 ?>
 
 <div class="methodreference-form">
+    <div class="alert alert-danger" style="background: #ffc0cb !important;margin-top: 1px !important;">
+       <a href="#" class="close" data-dismiss="alert" >×</a>
+      <p class="note" style="color:#d73925"><b>Reference with value "-" will not be counted in accomplishment report: </b><br/> They will be tagged either as Package name or On-site Calibration</p>
+       
+    </div>
+
+    <div class="alert alert-info" style="background: #d4f7e8 !important;margin-top: 1px !important;">
+       <a href="#" class="close" data-dismiss="alert" >×</a>
+      <p class="note" style="color:#265e8d"><b>Method Reference will be used in creating test/analysis:</b><br/> Make sure to not use <b>"-"</b> when specifying no references, you can use "none" instead.</p>
+   
+    </div>
 
     <?php $form = ActiveForm::begin(); ?>
 

@@ -269,14 +269,9 @@ echo Dialog::widget([
 if(Yii::$app->controller->action->id === 'update'){
     $this->registerJs("
         $('#add_analysis').on('click',function(){
-            //var radioSample = $('#sample-analysis-grid').yiiGridView('getSelectedRows');
             var radioSample = $(\"input[name='sample_id']:checked\").val();
             var radioMethod = $(\"input[name='methodref_id']:checked\").val();
             
-            /*if ($('input[type=radio][name=sample_id]', '#sample-analysis-grid').length < 1) {
-                alertWarning.alert(\"<p class='text-danger' style='font-weight:bold;'>No sample selected!</p>\");
-                return false;
-            }*/
             if (!$(\"input[name='sample_id']\").is(':checked') || radioSample == '') {
                 alertWarning.alert(\"<p class='text-danger' style='font-weight:bold;'>No sample selected!</p>\");
                 return false;
@@ -292,7 +287,7 @@ if(Yii::$app->controller->action->id === 'update'){
             else {
                 $('.image-loader').addClass('img-loader');
                 $('.analysisreferral-form form').submit();
-                $('.image-loader').addClass('img-loader');
+                $('.image-loader').removeClass('img-loader');
             }
         });
     ");

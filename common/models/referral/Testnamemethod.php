@@ -41,12 +41,10 @@ class Testnamemethod extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['testname_id', 'methodreference_id', 'added_by', 'create_time'], 'required'],
-            [['testname_id', 'methodreference_id'], 'integer'],
-            [['create_time', 'update_time'], 'safe'],
+            [['id', 'testname_id', 'method_id', 'lab_id', 'sampletype_id', 'create_time'], 'required'],
+            [['testname_id', 'id'], 'integer'],
+            [['added_by' , 'create_time', 'update_time'], 'safe'],
             [['added_by'], 'string', 'max' => 50],
-            [['testname_id'], 'exist', 'skipOnError' => true, 'targetClass' => Testname::className(), 'targetAttribute' => ['testname_id' => 'testname_id']],
-            [['methodreference_id'], 'exist', 'skipOnError' => true, 'targetClass' => Methodreference::className(), 'targetAttribute' => ['methodreference_id' => 'methodreference_id']],
         ];
     }
 
@@ -56,9 +54,11 @@ class Testnamemethod extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'testname_method_id' => 'Testname Method ID',
+            'id' => 'Testname Method ID',
             'testname_id' => 'Testname ID',
-            'methodreference_id' => 'Methodreference ID',
+            'lab_id' => 'Lab ID',
+            'sampletype_id' => 'Sampletype ID',
+            'method_id' => 'Methodreference ID',
             'added_by' => 'Added By',
             'create_time' => 'Create Time',
             'update_time' => 'Update Time',
@@ -78,6 +78,11 @@ class Testnamemethod extends \yii\db\ActiveRecord
      */
     public function getMethodreference()
     {
-        return $this->hasOne(Methodreference::className(), ['methodreference_id' => 'methodreference_id']);
+        return $this->hasOne(Methodreference::className(), ['method_id' => 'methodreference_id']);
+    }
+
+    public function getLab()
+    {
+        return $this->hasOne(Lab::className(), ['lab_id' => 'lab_id']);
     }
 }

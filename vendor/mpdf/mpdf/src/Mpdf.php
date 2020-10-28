@@ -13440,6 +13440,11 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 							}
 						}
 					}
+					//temp fix
+					$tablehf['direction']="";
+					$tablehf['cellLineHeight']="";
+					$tablehf['cellLineStackingStrategy']="";
+					$tablehf['cellLineStackingShift']="";
 
 					$w = $tablehf['w'];
 					$h = $tablehf['h'];

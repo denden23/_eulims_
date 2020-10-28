@@ -79,10 +79,42 @@ $now = new DateTime();
 
 $currentyear= $now->format('Y');
 $currentyear =2018;
+
+
+
+
+$js=<<<JS
+
+   
+$("#dropdownYear").change(function(){   
+        var year = $("#dropdownYear").val();
+        $.ajax({
+            url: "/site/topsample",
+            type: 'POST',
+            dataType: "JSON",
+            data: {
+                year: year
+            },
+            success: function(response) {
+                console.log(response);
+                $('#sampleTop').html(response.data);
+            },
+            error: function(xhr, status, error) {
+                alert(error);
+            }
+        });
+       
+    });
+
+JS;
+
+$this->registerJs($js,\yii\web\View::POS_READY);
+
 ?>
 
-<script type="text/javascript">
 
+
+<script type="text/javascript">
 
     $('body').on('click', '.option li', function () {
         var i = $(this).parents('.select').attr('id');
@@ -371,7 +403,7 @@ $currentyear =2018;
             </div>
 
             <div class ="row" name="secondRow">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="box box-default">
                         <div class="box-header with-border" style="background-color: #3c8dbc;color:white">
                             <img src="/images/icons/top10.png" style="width:25px">
@@ -472,7 +504,114 @@ $currentyear =2018;
                     </div>
                 </div>
 
-                <div class="col-md-8">
+                <div class="col-md-3">
+                    <div class="box box-default">
+                        <div class="box-header with-border" style="background-color: #3c8dbc;color:white">
+                            <img src="/images/icons/top10.png" style="width:25px">
+
+                            <h3 class="box-title">Top 10 Samples</h3>
+                        </div>
+                        <div class="box-body"  >
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <?php
+                                        echo Select2::widget([
+                                            'name' => 'sampleyear',
+                                            'id'=>'sampleyear',
+                                            'data' => $listYear,
+                                            'value'=>$curYearValue,
+                                            'options' => ['placeholder' => 'Year'],
+                                            'pluginOptions' => [
+                                                'allowClear' => true,
+                                                ],
+                                            'pluginEvents' => [
+                                                            "change" => "function() {
+                                                             var strYear = $('#sampleyear :selected').text();
+                                                             var strLab = $('#samplelab :selected').val();
+
+                                                                $.ajax({
+                                                                    url: '".Url::toRoute("/site/topsample")."',
+                                                                 //   dataType: 'json',
+                                                                    method: 'GET',
+                                                                   data: {year:strYear,lab:strLab},
+                                                                  
+                                                                    success: function (data, textStatus, jqXHR) {
+                                                                      $('#sampleTop').html(data);
+                                                                   },
+                                                                    beforeSend: function (xhr) {
+                                                                        //alert('Please wait...');
+                                                                        $('.image-loader').addClass( \"img-loader\" );
+                                                                    },
+                                                                    
+                                                                });
+                                                            }",
+                                                        ],
+                                        ]);
+                                        ?>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                     <?php
+                                        echo Select2::widget([
+                                            'name' => 'samplelab',
+                                            'id' => 'samplelab',
+                                            'value'=>0,
+                                            'data' => $listLab,
+                                            'options' => ['placeholder' => 'Select Laboratory'],
+                                            'pluginOptions' => [
+                                                //     'templateResult' => new JsExpression('format'),
+                                                //      'templateSelection' => new JsExpression('format'),
+                                                //       'escapeMarkup' => $escape,
+                                                'allowClear' => true
+                                            ],
+                                            
+                                            'pluginEvents' => [
+                                                            "change" => "function() {
+                                                             var strYear = $('#sampleyear :selected').text();
+                                                             var strLab = $('#samplelab :selected').val();
+                                                           //    alert(strYear);
+                                                           //    alert(strLab);
+                                                                $.ajax({
+                                                                    url: '".Url::toRoute("/site/topsample")."',
+                                                                 //   dataType: 'json',
+                                                                    method: 'GET',
+                                                                   data: {year:strYear,lab:strLab},
+                                                                  
+                                                                    success: function (data, textStatus, jqXHR) {
+                                                                      $('#sampleTop').html(data);
+                                                                   },
+                                                                    beforeSend: function (xhr) {
+                                                                        //alert('Please wait...');
+                                                                        $('.image-loader').addClass( \"img-loader\" );
+                                                                    },
+                                                                    
+                                                                });
+                                                            }",
+                                                        ],
+                                        ]);
+                                        ?>
+                                </div>
+                            </div>
+                            <div class="row">
+                                 <div class="col-md-12" style="margin-top: -5px">
+
+                                <?php
+                                    echo $this->render('_sample10', [ 'dataProvider' => $dataProvider]);
+                                ?>
+                                
+                                </div>
+                            </div>
+                           
+                        </div>
+
+                    </div>
+                </div>
+
+                
+
+                <div class="col-md-6">
                      <div class="box box-default">
                         <div class="box-header with-border" style="background-color: #3c8dbc;color:white">
                            <img src="/images/icons/graphdata.png" style="width:25px">

@@ -161,8 +161,9 @@ class SampleController extends Controller
                     //$sample->testcategory_id = (int) $_POST['Sample']['testcategory_id'];
                     //$sample->testcategory_id = 0;
                     $sample->sampletype_id = (int) $_POST['Sample']['sampletype_id'];
-                    $sample->samplename = $_POST['Sample']['samplename'];
+                    $sample->samplename = $_POST['Sample']['samplename'].' #'.$i;
                     $sample->description = $_POST['Sample']['description'];
+                    $sample->customer_description = $_POST['Sample']['customer_description'];
                     $sample->request_id = $request->request_id;
                     //$sample->sample_month = date('m', strtotime($request->request_datetime));
                     //$sample->sample_year = date('Y', strtotime($request->request_datetime));
@@ -185,7 +186,7 @@ class SampleController extends Controller
             }
 
         } elseif (Yii::$app->request->isAjax) {
-			$model->sampling_date = date('m/d/Y h:i:s A');
+		//	$model->sampling_date = date('m/d/Y h:i:s A');
 			return $this->renderAjax('_form', [
 				'model' => $model,
 				//'testcategory' => $testcategory,
@@ -228,43 +229,19 @@ class SampleController extends Controller
         $analysisCount = Analysis::find()->where('sample_id =:sampleId',[':sampleId'=>$id])->count();
 
         if ($model->load(Yii::$app->request->post())) {
-            //print_r(Yii::$app->request->post());
-            //exit;
-            $transaction = $connection->beginTransaction();
-            if($oldSampletypeId != $_POST['Sample']['sampletype_id']){
-                if($analysisCount > 0){
-                    $analysisDelete = Analysis::deleteAll('sample_id = :sampleId',[':sampleId'=>$id]);
-                    if($analysisDelete){
-                        $analysisSave = 1;
-                    } else {
-                        $analysisSave = 0;
-                    }
-                } else {
-                    $analysisSave = 1;
-                }
-            } else {
-				$analysisSave = 1;
-			}
+			
             if(isset($_POST['Sample']['sampling_date'])){
                 $model->sampling_date = date('Y-m-d H:i:s', strtotime($_POST['Sample']['sampling_date']));
             } else {
                 $model->sampling_date = date('Y-m-d H:i:s');
             }
-            if(isset($analysisSave) == 0){
-                $transaction->rollBack();
-                Yii::$app->session->setFlash('error', 'Error deleting analysis!');
+
+            if($model->save(false)){
                 return $this->redirect(['/lab/request/view', 'id' => $model->request_id]);
             } else {
-                if($model->save(false) && isset($analysisSave) == 1){
-                    $transaction->commit();
-    			//	Yii::$app->session->setFlash('success', $model->samplename." Successfully Updated.");
-                    return $this->redirect(['/lab/request/view', 'id' => $model->request_id]);
-                } else {
-                    $transaction->rollBack();
-                //    Yii::$app->session->setFlash('error', 'Error occured during update!');
-                    return $this->redirect(['view', 'id' => $model->request_id]);
-                }
+                return $this->redirect(['view', 'id' => $model->request_id]);
             }
+
         } elseif (Yii::$app->request->isAjax) {
                 return $this->renderAjax('_form', [
                     'model' => $model,
@@ -326,7 +303,7 @@ class SampleController extends Controller
 		$connection= Yii::$app->labdb;
         $checkForPayment = $model->request->payment_status_id;
 
-		if($checkForPayment < 2){
+		if($checkForPayment != 1){
 			Yii::$app->session->setFlash('error', "Cancel not allowed.\nOrder of Payment already created for\n".$model->request->request_ref_num.".");
 			return $this->redirect(['/lab/request/view', 'id' => $model->request_id]);
 		} elseif($checkForPayment > 1 && $model->active > 0) {
@@ -451,7 +428,7 @@ class SampleController extends Controller
 
     protected function listSampletype($labId)
     {
-        $sampletype = ArrayHelper::map(Sampletype::find()->joinWith('labSampletypes')->andWhere(['lab_id'=>$labId])->all(), 'sampletype_id', 
+        $sampletype = ArrayHelper::map(Sampletype::find()->joinWith('labSampletypes')->andWhere(['lab_id'=>$labId,'status_id'=>1])->all(), 'sampletype_id', 
             function($sampletype, $defaultValue) {
                 return $sampletype->type;
         });
@@ -635,7 +612,9 @@ class SampleController extends Controller
     {
         $refcomponent = new ReferralComponent();
         $list = $refcomponent->getSampletype($labId);
-        $data = ArrayHelper::map(json_decode($list), 'sampletype_id', 'type');
+        $data = [];
+        if($list)
+            $data = ArrayHelper::map(json_decode($list), 'sampletype_id', 'type');
         return $data;
     }
 }

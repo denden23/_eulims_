@@ -50,7 +50,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="col-md-3 col-sm-6 col-xs-12">
            
                <div  style="padding-top: 1px;padding-bottom: 1px;display:block;text-align: center">
-                 <a href="#" title="Customer Wallet"><img class="imgHover" src="/images/customerwalletsquare.png" style="height:120px;width: 120px"></a>
+                 <a href="/reports/finance/analytic" title="Customer Wallet"><img class="imgHover" src="/images/customerwalletsquare.png" style="height:120px;width: 120px"></a>
               </div>
             </div>
             
@@ -83,7 +83,7 @@ $this->params['breadcrumbs'][] = $this->title;
            <div class="col-md-2 col-sm-6 col-xs-12">
              
                <div  style="padding-top: 1px;padding-bottom: 1px;display:block;text-align: center">
-                  <a href="#" title="Request"><img class="imgHover" src="/images/requestsquare.png" style="height:120px;width: 120px" ></a>
+                  <a href="/reports/lab/accomplishment/firms" title="Request/Customer/Firms"><img class="imgHover" src="/images/requestsquare.png" style="height:120px;width: 120px" ></a>
               </div>
             </div>
             <!-- /.col -->
@@ -105,7 +105,7 @@ $this->params['breadcrumbs'][] = $this->title;
              
 
                <div  style="padding-top: 1px;padding-bottom: 1px;display:block;text-align: center">
-                 <a href="/reports/lab/statistic/samples" title="Summary of Samples"><img class="imgHover" src="/images/summarysamplessquare.png" style="height:120px;width: 120px"></a>
+                 <a href="/reports/lab/statistic/daily" title="Summary of Samples"><img class="imgHover" src="/images/summarysamplessquare.png" style="height:120px;width: 120px"></a>
               </div>
             </div>
 			

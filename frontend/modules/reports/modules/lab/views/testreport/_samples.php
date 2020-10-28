@@ -1,12 +1,23 @@
  <?php 
 use kartik\grid\GridView;
 use yii\helpers\Html;
+use common\models\lab\TestreportSample;
 
 
     $gridColumn = [
         [
           // 'attribute'=>'sample_id',
           'class' => '\kartik\grid\CheckboxColumn',
+             'checkboxOptions' => function($model) {
+                $testreportsample = TestreportSample::find()->where(['sample_id' => $model->sample_id])->one();
+                
+                 if ($testreportsample){
+                        return ['disabled' =>true];
+                 }
+                    
+                
+             },
+                     
         ],
         [
           'class' => '\kartik\grid\SerialColumn',    
@@ -23,6 +34,24 @@ use yii\helpers\Html;
           'attribute'=>'description',
           'enableSorting' => false,
         ],
+        
+//        [
+//               
+//                'header'=>'Test Report ID',
+//                'value'=>function($model){
+//
+//                    $testreportsample = TestreportSample::find()->where(['sample_id' => $model->sample_id])->one();
+//
+//                    if ($testreportsample){
+//                        return $testreportsample->testreport_sample_id;
+//                    }else{
+//                        "";
+//                    }
+//                   
+//                },
+//               
+//                
+//            ],
         // [
         //   'attribute'=>'remarks',
         //   'enableSorting' => false,

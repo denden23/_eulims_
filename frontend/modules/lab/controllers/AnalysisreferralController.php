@@ -155,6 +155,7 @@ class AnalysisreferralController extends Controller
                 }
             }
             $discount = $component->getDiscountOne($request->discount_id);
+
             $rate = $discount->rate;
             $fee = $connection->createCommand('SELECT SUM(fee) as subtotal FROM tbl_analysis WHERE request_id =:requestId')
             ->bindValue(':requestId',$requestId)->queryOne();
@@ -384,70 +385,34 @@ class AnalysisreferralController extends Controller
     //get referral sample type list
     protected function listSampletypereferral($labId)
     {
-        //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/labsampletypebylab?lab_id='.$labId;
-        $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/sampletypebylab?lab_id='.$labId;
-        $curl = new curl\Curl();
-        $list = $curl->get($apiUrl);
-
-        $data = ArrayHelper::map(json_decode($list), 'sampletype_id', 'type');
-        
+        $refcomponent = new ReferralComponent();
+        $list = $refcomponent->getSampletype($labId);
+        $data = [];
+        if($list)
+            $data = ArrayHelper::map(json_decode($list), 'sampletype_id', 'type');
         return $data;
     }
 
-    //get referral sample type list
+    //get referral sample type list //btc updated to the restreferral working
     protected function listsampletypereferrals($requestId)
     {
         $sample = Sample::find()
                     ->select('sampletype_id')
-                    //->joinWith('labSampletypes')
-                    //->where(['tbl_labsampletype.lab_id' => $labId])
                     ->where('request_id = :requestId', [':requestId' => $requestId])
                     ->groupBy('sampletype_id')
                     ->asArray()->all();
-
-
-         /*$data = (new \yii\db\Query())
-            ->from('eulims_referral_lab.tbl_sampletypetestname')
-            ->join('INNER JOIN', 'eulims_referral_lab.tbl_testname', 'tbl_sampletypetestname.testname_id = tbl_testname.testname_id')
-            ->where([
-                'sampletype_id' => [1,2],
-            ])
-            //->where('sampletype_id=:sampletypeId', [':sampletype_id' => [1,2]])
-            ->orderBy('sampletype_id,tbl_sampletypetestname.testname_id')
-            //->asArray()
-            ->all();*/
-
-
-        //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/labsampletypebylab?lab_id='.$labId;
-        //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/sampletypebylab?lab_id='.$labId;
-        //$curl = new curl\Curl();
-        //$list = $curl->get($apiUrl);
-
-        //$data = ArrayHelper::map(json_decode($list), 'sampletype_id', 'type');
-        
-        //return $data;
-
-        //$datas = implode(',',$data);
 
         $sampletypeId = implode(',', array_map(function ($data) {
             return $data['sampletype_id'];
         }, $sample));
 
-        //echo $a;
-
-        $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
-        //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
-        $curl = new curl\Curl();
-        $list = $curl->get($apiUrl);
-
-        $data = ArrayHelper::map(json_decode($list), 'testname_id', 'test_name');
-        
+        //added this line here to get all the testnames by sampletype ids
+        $refcomponent = new ReferralComponent();
+        $list = $refcomponent->getTestnamesbysampletypeidsonly($sampletypeId);
+        $data = [];
+        if($list)
+            $data = ArrayHelper::map(json_decode($list), 'testname_id', 'test_name');
         return $data;
-
-        //echo "<pre>";
-        //print_r($list);
-        //echo $datas;
-        //echo "</pre>";
     }
     
     //get referral sample type list by sampletype_id
@@ -466,8 +431,8 @@ class AnalysisreferralController extends Controller
             }
         }
         //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/labsampletypebylab?lab_id='.$labId;
-        $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
-        //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
+        //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
+        $apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
         $curl = new curl\Curl();
         $list = $curl->get($apiUrl);
 
@@ -479,203 +444,93 @@ class AnalysisreferralController extends Controller
         //print_r(json_decode($list));
         //echo "</pre>";
     }
-
+    //btc needed when the samples are clicked in the add analysis , updated and reflected in the restreferral
     public function actionGetreferraltestname() {
-
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         if(Yii::$app->request->get('sample_id'))
         {
-            /*if(count(Yii::$app->request->get('sample_id'))>1){
-                //Yii::$app->request->get('sampletype_id')
-                $sampleId = implode(",",Yii::$app->request->get('sample_id'));
-
-                $sample = Sample::find()
-                    ->select('sampletype_id')
-                    //->joinWith('labSampletypes')
-                    //->where(['tbl_labsampletype.lab_id' => $labId])
-                    //->where('request_id = :requestId', [':requestId' => $requestId])
-                    ->where('sample_id = :sampleId', [':sampleId' => $sampleId])
-                    ->groupBy('sampletype_id')
-                    ->asArray()->all();
-
-                $sampletypeId = implode(', ', array_map(function ($data) {
- 
-                    return $data['sampletype_id'];
-                     
-                }, $sample));
-
-            } else {
-                $sampletypeId = Yii::$app->request->get('sample_id');
-            }*/
-
-            //$sampleId = Yii::$app->request->get('sample_id');
-            //$sampleId = implode(",",Yii::$app->request->get('sample_id'));
             $sampleId = explode(",",Yii::$app->request->get('sample_id'));
-            /*
-            //only single record
-            $sample = Sample::find()
-                ->select('sampletype_id')
-                //->joinWith('labSampletypes')
-                //->where(['tbl_labsampletype.lab_id' => $labId])
-                //->where('request_id = :requestId', [':requestId' => $requestId])
-                ->where('sample_id = :sampleId', [':sampleId' => $sampleId])
-                //->where(['in',['sample_id'],[['sample_id' => $sampleId],]])
-                ->groupBy('sampletype_id')
-                ->asArray()
-                ->all();
-            */
             $sample = (new Query)
                 ->select('sampletype_id')
                 ->from('eulims_lab.tbl_sample')
-                //->join('INNER JOIN', 'eulims_referral_lab.tbl_testname', 'tbl_sampletypetestname.testname_id = tbl_testname.testname_id')
                 ->where([
-                    //'sampletype_id' => [1,2],
                     'sample_id' => $sampleId,
                 ])
-                //->where('sampletype_id=:sampletypeId', [':sampletype_id' => [1,2]])
-                //->groupBy('tbl_testname.testname_id')
-                //->orderBy('sampletype_id,tbl_sampletypetestname.testname_id')
                 ->groupBy('sampletype_id')
-                //->orderBy('tbl_sampletypetestname.testname_id')
-                //->asArray()
                 ->all();
 
             $sampletypeId = implode(',', array_map(function ($data) {
                 return $data['sampletype_id'];
             }, $sample));
 
-            $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
-            //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamebysampletype?sampletype_id='.$sampletypeId;
-            $curl = new curl\Curl();
-            $curl->setOption(CURLOPT_CONNECTTIMEOUT, 120);
-            $curl->setOption(CURLOPT_TIMEOUT, 120);
-            $lists = $curl->get($apiUrl);
-
-            \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+            //added this line here to het all the testnames by sampletype ids
+            $refcomponent = new ReferralComponent();
+            $lists = $refcomponent->getTestnamesbysampletypeidsonly($sampletypeId);
 
             if(count($lists)>0)
             {
-                //$data = json_decode($list);
-                //$data = ArrayHelper::map(json_decode($list), 'testname_id', 'test_name');
-                //echo "<option value='' selected></option>";
-                /*    foreach($data as $value=>$testname){
-                        echo CHtml::tag('option', array('value'=>$value),
-                            CHtml::encode($testname),true);
-                    }*/
-               // echo 'gg';
-                //$clientCodes = ClientCode::find()->andWhere(['client_id' => $id])->all();
-                //$data = [['id' => '', 'text' => '']];
                 foreach(json_decode($lists) as $list) {
                     $data[] = ['id' => $list->testname_id, 'text' => $list->test_name];
                 }
-                //print_r($lists);
             } else {
-                //$data = null;
                 $data = [['id' => '', 'text' => 'No results found']];
             }
-            //$data =  $data;
-            //echo "<pre>";
-            //print_r($sampletypeId);
-            //echo "</pre>";
         } else {
-            //$data = Json::encode(["error"=>"No sample selected."]);
             $data = 'No sample selected.';
         }
-        //return $data;
-        //return json_encode();
         return ['data' => $data];
     }
 
+    //btc updated this action
     public function actionGettestnamemethod()
-    {
+    {   //gets the analysis record for the update purpose otherwise new 
         if (Yii::$app->request->get('analysis_id')>0){
             $analysisId = (int) Yii::$app->request->get('analysis_id');
             $model = $this->findModel($analysisId);
-           //test_id = $model->test_id;
         } else {
             $model = new Analysisextend();
         }
-
+        //code below is responsible for getting the testmethod reference , fee
         if (Yii::$app->request->get('test_id')>0){
             $testnameId = (int) Yii::$app->request->get('test_id');
             $methods = json_decode($this->listReferralmethodref($testnameId),true);
         }
         else {
-            //if ($test_id > 0){
-                //$methods = json_decode($this->listReferralmethodref($test_id),true);
-            //} else {
                 $methods = [];
-            //}
         }
 
         if (Yii::$app->request->isAjax) {
             $methodrefDataProvider = new ArrayDataProvider([
-                //'key'=>'sample_id',
                 'allModels' => $methods,
                 'pagination' => [
                     'pageSize' => 10,
                 ],
-                //'pagination'=>false,
             ]);
             return $this->renderAjax('_methodreference', [
                 'methodProvider' => $methodrefDataProvider,
                 'model' => $model,
             ]);
         }
-        //return $this->renderAjax('_methodreference', [
-        //    'methodProvider' => $methodrefDataProvider,
-        //]);
-        /*return $this->renderPartial('_methodreference', [
-           'methodProvider' => $methodrefDataProvider,
-        ]);*/
-        //return $this->render('_methodreference', ['methodProvider' => $methodrefDataProvider,]);
     }
 
-    //get referral method reference
+    //get referral method reference btc updated this action
     protected function listReferralmethodref($testnameId)
     {
 
-        //if(Yii::$app->request->get('testname_id'))
         if(isset($testnameId))
         {
-            //$sampletypeId = (int) Yii::$app->request->get('sampletype_id');
-            //$sampletypeId = json_encode(Yii::$app->request->get('sampletype_id'));
-            /*if(count(Yii::$app->request->get('sampletype_id'))>1){
-                //Yii::$app->request->get('sampletype_id')
-                $sampletypeId = implode(",",Yii::$app->request->get('sampletype_id'));
-            } else {
-                $sampletypeId = (int) Yii::$app->request->get('sampletype_id');
-            }*/
-            //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/labsampletypebylab?lab_id='.$labId;
-            //$testnameId = Yii::$app->request->get('testname_id');
-
             if($testnameId > 0){
-                $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamemethodref?testname_id='.$testnameId;
-                //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamemethodref?testname_id='.$testnameId;
-                $curl = new curl\Curl();
-                $curl->setOption(CURLOPT_CONNECTTIMEOUT, 120);
-                $curl->setOption(CURLOPT_TIMEOUT, 120);
-                //$list = $curl->get($apiUrl);
-                $data = $curl->get($apiUrl);
+                //added this line here to get all the testnamemethods from the referral component
+                $refcomponent = new ReferralComponent();
+                //named this function like this because it has the same function with different number of args
+                $data = $refcomponent->getMethodrefbytestnameidonly($testnameId);
             } else {
                 $data = [];
             }
-
-            //$data = ArrayHelper::map(json_decode($list), 'testname_id', 'test_name');
-            //$query = Sample::find()->where('request_id = :requestId', [':requestId' => $requestId]);
-            
-            /*$data = new ActiveDataProvider([
-                'query' => json_decode($list),
-            ]);*/
-            //$data = json_decode($list);
-
         } else {
             $data =[];
         }
         return $data;
-
-        //echo "<pre>";
-        //print_r(json_decode($list));
-        //echo "</pre>";
     }
 
     //get default pagination page on load for the checked method reference
@@ -693,8 +548,8 @@ class AnalysisreferralController extends Controller
 
         if($analysisId > 0){
             $model = $this->findModel($analysisId);
-            $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/setpagemethodref?testname_id='.$model->test_id.'&methodref_id='.$model->methodref_id.'&perpage='.$perpage;
-            //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/setpagemethodref?testname_id='.$model->test_id.'&methodref_id='.$model->methodref_id.'&perpage='.$perpage;
+            //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/setpagemethodref?testname_id='.$model->test_id.'&methodref_id='.$model->methodref_id.'&perpage='.$perpage;
+            $apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/setpagemethodref?testname_id='.$model->test_id.'&methodref_id='.$model->methodref_id.'&perpage='.$perpage;
             $curl = new curl\Curl();
             $curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
             $curl->setOption(CURLOPT_TIMEOUT, 180);
@@ -775,10 +630,10 @@ class AnalysisreferralController extends Controller
                 $package->date_analysis = date('Y-m-d');
                 $package->request_id = (int) $requestId;
                 $package->sample_id = (int) $sampleId;
-                $package->testname = '-';
+                $package->testname = $package_details['package']['name'];
                 $package->package_id = $packageId;
-                $package->package_name = $package_details['package']['name'];
-                $package->methodref_id = NULL;
+                // $package->package_name = $package_details['package']['name'];
+                $package->methodref_id = 0;
                 $package->method = '-';
                 $package->references = '-';
                 $package->fee = $package_details['package']['rate'];
@@ -786,7 +641,7 @@ class AnalysisreferralController extends Controller
                 $package->test_id = 0;
                 $package->is_package = 1;
                 $package->type_fee_id = 2;
-                $package->is_package_name = 1;
+                // $package->is_package_name = 1;
                 $package->sampletype_id = (int) $sample->sampletype_id;
 
                 if($package->save(false)){
@@ -1142,8 +997,8 @@ class AnalysisreferralController extends Controller
         if(isset($packageId))
         {
             if($packageId > 0){
-                $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamemethodref?testname_id='.$testnameId;
-                //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamemethodref?testname_id='.$testnameId;
+                //$apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/testnamemethodref?testname_id='.$testnameId;
+                $apiUrl='https://eulimsapi.onelab.ph/api/web/referral/listdatas/testnamemethodref?testname_id='.$testnameId;
                 $curl = new curl\Curl();
                 $curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
                 $curl->setOption(CURLOPT_TIMEOUT, 180);

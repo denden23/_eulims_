@@ -265,133 +265,105 @@ if(count($sampletype) > 0){
         </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-md-6">
-            <div class="input-group">
-                <?php
-                $func = new Functions();
-                echo $func->GetReferralCustomerList($form, $model, $disabled,'Customer');
-                if($disabled){
-                    $btnDisp=" disabled='disabled'";
-                }else{
-                    $btnDisp="";
-                }
-                ?>
-            </div>
-    </div>
-    <div class="col-md-6">
-     <?= $form->field($model, 'modeofreleaseids')->widget(Select2::classname(), [
-        'data' => $modereleasereferral,
-        //'initValueText'=>$model->modeofrelease_ids,
-        'language' => 'en',
-         'options' => [
-            'placeholder' => 'Select Mode of Release...',
-            'multiple' => true,
-            'disabled'=>$disabled
-        ],
-        'pluginEvents' => [
-            "change" => "function() { 
-                $('#modeofrelease_ids').val($(this).val());
-            }
-            ",
-        ]
-    ])->label('Mode of Release'); ?> 
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6">
-    <?= $form->field($model, 'discount_id')->widget(Select2::classname(), [
-        'data' => $discountreferral,
-        'language' => 'en',
-        'options' => ['placeholder' => 'Select Discount','disabled'=>$disabled || $model->payment_type_id==2],
-        'pluginOptions' => [
-            'allowClear' => true
-        ],
-        'pluginEvents'=>[
-            "change" => 'function() { 
-                var discountid=this.value;
-                console.log(discountid);
-                $.get("/ajax/getdiscountreferral", {
-                        discountid: discountid
-                    }, function(result){
-                    if(result){
-                       $("#exrequestreferral-discount").val(result.rate);
+    <div class="row">
+        <div class="col-md-6">
+                <div class="input-group">
+                    <?php
+                    $func = new Functions();
+                    echo $func->GetReferralCustomerList($form, $model, $disabled,'Customer');
+                    if($disabled){
+                        $btnDisp=" disabled='disabled'";
+                    }else{
+                        $btnDisp="";
                     }
-                });
-            }
-        ',]
-    ])->label('Discount'); ?>   
-    </div>
-    <div class="col-md-6">
-    <?= $form->field($model, 'discount')->textInput(['maxlength' => true,'readonly'=>true,'style'=>'background-color: '.$Color])->label('Discount(%)') ?>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6">
-    <?= $form->field($model, 'purpose_id')->widget(Select2::classname(), [
-        'data' => $purposereferral,
-        'language' => 'en',
-        'options' => ['placeholder' => 'Select Purpose','disabled'=>$disabled],
-        'pluginOptions' => [
-            'allowClear' => true
-        ],
-    ])->label('Purpose'); ?>
-    </div>
-    <div class="col-md-6">
-    <?= $form->field($model, 'report_due')->widget(DatePicker::classname(), [
-        'readonly'=>true,
-        'disabled' => $disabled,
-    'options' => ['placeholder' => 'Report Due'],
-        'value'=>function($model){
-             return date("m/d/Y",$model->report_due);
-        },
-    'pluginOptions' => [
-            'autoclose' => true,
-            'removeButton' => false,
-            'format' => 'yyyy-mm-dd'
-    ],
-        'pluginEvents'=>[
-            "change" => "",
-        ]
-    ]); ?>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6">
-    <?= $form->field($model, 'conforme')->textInput(['readonly' => $disabled]) ?>
-    </div>
-    <div class="col-md-6">
-    <?= $form->field($model, 'receivedBy')->textInput(['readonly' => true]) ?>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6 required">
-        <?php
-            $sampletypeOptions = [
-                'language' => 'en-US',
-                'width' => '100%',
-                'theme' => Select2::THEME_KRAJEE,
-                'placeholder' => 'Select Sample Type',
-                'allowClear' => true,
-            ];
-        ?>
-        <?= $form->field($model, 'sampletype_id')->widget(Select2::classname(), [
-            /*'data' => ArrayHelper::map(Sampletype::find()->all(),'sampletype_id','type'),
+                    ?>
+                </div>
+        </div>
+        <div class="col-md-6">
+         <?= $form->field($model, 'modeofreleaseids')->widget(Select2::classname(), [
+            'data' => $modereleasereferral,
+            //'initValueText'=>$model->modeofrelease_ids,
             'language' => 'en',
-            'options' => ['placeholder' => 'Select Sample Type','disabled'=>$disabled],
+             'options' => [
+                'placeholder' => 'Select Mode of Release...',
+                'multiple' => true,
+                'disabled'=>$disabled
+            ],
+            'pluginEvents' => [
+                "change" => "function() { 
+                    $('#modeofrelease_ids').val($(this).val());
+                }
+                ",
+            ]
+        ])->label('Mode of Release'); ?> 
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+        <?= $form->field($model, 'discount_id')->widget(Select2::classname(), [
+            'data' => $discountreferral,
+            'language' => 'en',
+            'options' => ['placeholder' => 'Select Discount','disabled'=>$disabled || $model->payment_type_id==2],
             'pluginOptions' => [
                 'allowClear' => true
-            ],*/
-            'data' => $dataSampletype,
-            'theme' => Select2::THEME_KRAJEE,
-            //'theme' => Select2::THEME_BOOTSTRAP,
-            'options' => $sampletypeOptions,
-            'pluginOptions' => [
-                'allowClear' => true,
             ],
-        ])->label('Sample Type'); ?>
+            'pluginEvents'=>[
+                "change" => 'function() { 
+                    var discountid=this.value;
+                    console.log(discountid);
+                    $.get("/ajax/getdiscountreferral", {
+                            discountid: discountid
+                        }, function(result){
+                        if(result){
+                           $("#exrequestreferral-discount").val(result.rate);
+                        }
+                    });
+                }
+            ',]
+        ])->label('Discount'); ?>   
+        </div>
+        <div class="col-md-6">
+        <?= $form->field($model, 'discount')->textInput(['maxlength' => true,'readonly'=>true,'style'=>'background-color: '.$Color])->label('Discount(%)') ?>
+        </div>
     </div>
-</div>
+    <div class="row">
+        <div class="col-md-6">
+        <?= $form->field($model, 'purpose_id')->widget(Select2::classname(), [
+            'data' => $purposereferral,
+            'language' => 'en',
+            'options' => ['placeholder' => 'Select Purpose','disabled'=>$disabled],
+            'pluginOptions' => [
+                'allowClear' => true
+            ],
+        ])->label('Purpose'); ?>
+        </div>
+        <div class="col-md-6">
+        <?= $form->field($model, 'report_due')->widget(DatePicker::classname(), [
+            'readonly'=>true,
+            'disabled' => $disabled,
+        'options' => ['placeholder' => 'Report Due'],
+            'value'=>function($model){
+                 return date("m/d/Y",$model->report_due);
+            },
+        'pluginOptions' => [
+                'autoclose' => true,
+                'removeButton' => false,
+                'format' => 'yyyy-mm-dd'
+        ],
+            'pluginEvents'=>[
+                "change" => "",
+            ]
+        ]); ?>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+        <?= $form->field($model, 'conforme')->textInput(['readonly' => $disabled]) ?>
+        </div>
+        <div class="col-md-6">
+        <?= $form->field($model, 'receivedBy')->textInput(['readonly' => true]) ?>
+        </div>
+    </div>
     <div class="row">
         <div class="col-md-12">
         <?php
@@ -593,10 +565,24 @@ if(count($sampletype) > 0){
     </div>
     <div class="row" style="float: right;padding-right: 15px">
         <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['disabled'=>$disabled,'class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary','id'=>'btn-save']) ?>
-        <?= Html::Button('Cancel', ['class' => 'btn btn-default', 'id' => 'modalCancel', 'data-dismiss' => 'modal']) ?>
+        <?= Html::Button('Close', ['class' => 'btn btn-default', 'id' => 'modalCancel', 'data-dismiss' => 'modal']) ?>
     </div>
     <?php ActiveForm::end(); ?>
 </div>
+<?php
+// Warning alert
+echo Dialog::widget([
+    'libName' => 'alertWarning', // a custom lib name
+    'overrideYiiConfirm' => false,
+    'options' => [  // customized BootstrapDialog options
+        'size' => Dialog::SIZE_SMALL, // large dialog text
+        'type' => Dialog::TYPE_DANGER, // bootstrap contextual color
+        'title' => "<i class='glyphicon glyphicon-alert' style='font-size:20px'></i> Warning",
+        'buttonLabel' => 'Close',
+    ]
+]);
+
+?>
 <?php
 if(!$model->isNewRecord) {
     $this->registerJs("
@@ -643,4 +629,34 @@ function confirmLab(){
         ]
     });
 }
+
+$('#btn-save').on('click',function() {
+    var request_type = $('#exrequestreferral-request_type_id').val();
+    var lab = $('#exrequestreferral-lab_id').val();
+    var customer = $('#exrequestreferral-customer_id').val();
+    var discount = $('#exrequestreferral-discount_id').val();
+    var purpose = $('#exrequestreferral-purpose_id').val();
+    var conforme = $('#exrequestreferral-conforme').val();
+    var sample_received_date = $('#exrequestreferral-sample_received_date').val();
+    var modeofrelease = $('#exrequestreferral-modeofreleaseids').val();
+    var due = $('#exrequestreferral-report_due').val();
+    var received = $('#exrequestreferral-receivedby').val();
+    //var test_category = $('#erequest-testcategory_id').val();
+    //var sample_type = $('#erequest-sampletype_id').val();
+    //if metro lab
+    var met_date1 = $('#exrequestreferral-recommended_due_date').val();
+    var met_date2 = $('#exrequestreferral-equipment_release_date').val();
+    var met_date3 = $('#exrequestreferral-est_date_completion').val();
+    var met_date4 = $('#exrequestreferral-certificate_release_date').val();
+
+    if (!request_type || !lab || !customer || !discount || !purpose || !conforme || !sample_received_date || !modeofrelease || !due || !received) {
+        alertWarning.alert("<p class='text-danger' style='font-weight:bold;'>Field with * is required!</p>");
+        return false;
+    } else if (lab == 3 && (!met_date1 || !met_date2 || !met_date3 || !met_date4)) {
+        alertWarning.alert("<p class='text-danger' style='font-weight:bold;'>Please input Metrology Request Details!</p>");
+        return false;
+    } else {
+        $('.pstc-request-form form').submit();
+    }
+});
 </script>

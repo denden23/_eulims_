@@ -11,9 +11,6 @@ return [
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'modules' => [
         'gridview' => ['class' => 'kartik\grid\Module'],
-        // 'datecontrol' =>  [
-        //     'class' => 'kartik\datecontrol\Module'
-        // ],
         'profile' => [
             'class' => 'common\modules\profile\Module',
         ],
@@ -38,17 +35,5 @@ return [
             ]
         ],
     ],
-    // 'as access' => [
-    //     //'class' => 'mdm\admin\components\AccessControl',
-    //     'class' => 'common\modules\admin\components\AccessControl',
-    //     'allowActions' => [
-    //         '/install/*',
-    //         '/ajax/*',
-    //         '/ajax/getlab',
-    //         'site/*',
-    //         '/admin/user/signup',
-    //         '/lab/analysis/listtest',
-    //     ]
-    // ],
     'components' => $components
 ];

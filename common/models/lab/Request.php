@@ -4,6 +4,7 @@ namespace common\models\lab;
 
 use Yii;
 use common\models\system\Rstl;
+use common\models\finance\Paymentitem;
 use common\components\Functions;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
@@ -41,7 +42,6 @@ use yii\db\ActiveRecord;
  * @property string $certificate_release_date 
  * @property string $released_by 
  * @property string $received_by 
- * @property int $customer_old_id 
  * $property int $payment_status_id
  * 
  * @property Analysis[] $analyses
@@ -63,6 +63,7 @@ class Request extends \yii\db\ActiveRecord
     //public $customer_name;
     //public $modeofreleaseids;
     //public $request_date;
+    private $_oldAttributes=false;
     /**
      * {@inheritdoc}
      */
@@ -86,11 +87,42 @@ class Request extends \yii\db\ActiveRecord
     }
      public function beforeSave($insert) {
         if ($insert) {
-            if(!$this->customer_old_id)
-                $this->request_ref_num=NULL;
+            //do something
+        }else{
+            //check if there are changes in discount
+            if($this->_oldAttributes['discount_id']!=$this->attributes['discount_id']){
+                //if there are any changes
+                //check if the original data has no discount yet
+                if($this->_oldAttributes['discount_id']){
+                    //recompute all the fee in the anakysis
+                    $sql = "SELECT SUM(fee) as subtotal FROM tbl_analysis WHERE request_id=$this->request_id";
+                    $Connection = Yii::$app->labdb;
+                    $command = $Connection->createCommand($sql);
+                    $row = $command->queryOne();
+                    $subtotal = $row['subtotal'];
+                    $this->total = $subtotal - ($subtotal * ((int)$this->discount/100));
+
+                }else{
+                    //we just adjust the total base on the discount
+                    if($this->discount_id){
+                        $this->total = $this->total - ($this->total * ((int)$this->discount/100));
+                    }
+                }
+            }
+            
         }
         return parent::beforeSave($insert);
     }
+
+    public function afterFind()
+    {
+        //acts like caching, we will save the original data in the old variable so that we could able to compare it with any changes
+
+        $this->_oldAttributes = $this->attributes;
+
+    }
+
+
     /**
      * @return \yii\db\Connection the database connection used by this AR class.
      */
@@ -149,7 +181,7 @@ class Request extends \yii\db\ActiveRecord
             'report_due' => 'Report Due',
             'conforme' => 'Conforme',
             'receivedBy' => 'Received By',
-            'created_at' => 'Code',
+            'created_at' => 'Tracking code',
             'posted' => 'Posted',
             'status_id' => 'Status',
             //'customer_name'=>'Customer Name',
@@ -164,7 +196,6 @@ class Request extends \yii\db\ActiveRecord
             'released_by' => 'Released By',
             'received_by' => 'Received By',
             'payment_status_id'=>'Payment Status',
-            'customer_old_id'=>'customer_old_id',
             'contact_num'=>'Conforme Contact Number',
         ];
     }
@@ -301,4 +332,10 @@ class Request extends \yii\db\ActiveRecord
     {
         return $this->hasOne(RequestType::className(), ['request_type_id' => 'request_type_id']);
     }
+
+    public function getPayment()
+    {
+        return $this->hasOne(Paymentitem::className(), ['request_id' => 'request_id']);
+    }
 }
+

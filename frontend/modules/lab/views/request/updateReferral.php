@@ -18,6 +18,7 @@ $this->params['breadcrumbs'][] = 'Update';
         'purposereferral' => $purposereferral,
         'modereleasereferral' => $modereleasereferral,
         'notified'=>$notified,
+        'api_url'=>$api_url
     ]) ?>
 
 </div>

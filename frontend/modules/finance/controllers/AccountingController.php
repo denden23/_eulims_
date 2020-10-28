@@ -41,7 +41,7 @@ class AccountingController extends Controller
     {
         $model =new Op();
         $searchModel = new OpSearchNoneLab();
-        $Op_Query = Op::find()->where(['>', 'collectiontype_id',2]);
+        $Op_Query = Op::find()->where(['>', 'collectiontype_id',2])->andWhere(['rstl_id'=>Yii::$app->user->identity->profile->rstl_id]);;
         $dataProvider = new ActiveDataProvider([
                 'query' => $Op_Query,
                 'sort'=> ['defaultOrder' => ['transactionnum'=>SORT_DESC]],

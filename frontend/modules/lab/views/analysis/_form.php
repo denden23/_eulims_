@@ -27,30 +27,22 @@ use kartik\money\MaskMoney;
 /* @var $this yii\web\View */
 /* @var $model common\models\lab\Analysis */
 /* @var $form yii\widgets\ActiveForm */
-
-
-$js=<<<SCRIPT
-   $(".kv-row-checkbox").click(function(){
-      var keys = $('#sample-grid').yiiGridView('getSelectedRows');
-      var keylist= keys.join();
-      $("#sample_ids").val(keylist);
-      $("#sample_ids").val(keylist);
-      $("#analysis_create").prop('disabled', keys=='');  
-   });    
-   $(".select-on-check-all").change(function(){
-    var keys = $('#sample-grid').yiiGridView('getSelectedRows');
-    var keylist= keys.join();
- 
-    $("#analysis_create").prop('disabled', keys=='');  
-   });
-  
-SCRIPT;
-$this->registerJs($js);
 ?>
 
 
 <div class="analysis-form">
 
+  <div class="alert alert-danger" style="background: #ffc0cb !important;margin-top: 1px !important;">
+   <a href="#" class="close" data-dismiss="alert" >×</a>
+  <p class="note" style="color:#d73925"><b>Always check if you have chosen the right Laboratory in this Request: </b><br/> Test Methods won't load if it is meant for other Laboratory.</p>
+   
+  </div>
+
+  <div class="alert alert-info" style="background: #d4f7e8 !important;margin-top: 1px !important;">
+   <a href="#" class="close" data-dismiss="alert" >×</a>
+  <p class="note" style="color:#265e8d"><b>Note:</b> Please contact the Administrator or the Lab-Manager if the Test that you're looking for cannot be found.</p>
+   
+  </div>
     <?php $form = ActiveForm::begin(); ?>
  
     <?php
@@ -65,48 +57,57 @@ $this->registerJs($js);
     
     }
 ?>
+<div class="row">
+  <div class="col-sm-12">
 
-    <?= GridView::widget([
-      'id' => 'sample-grid',
-      'dataProvider'=> $sampleDataProvider,
-      'pjax'=>true,
-      'pjaxSettings' => [
+      <?php echo Html::activeLabel($model,'sample'); ?>
+      <?= Select2::widget([
+          'name' => 'base_samples',
+          'data' => ArrayHelper::map($base_sample,'sample_id','samplename'),
           'options' => [
-              'enablePushState' => false,
+            'multiple' => true,
+            'placeholder' => 'Select sample ...',
+            'id'=>'base-sample',
+            'tags'=>true
           ]
-      ],
-      'containerOptions'=>[
-          'style'=>'overflow:auto; height:150px',
-      ],
-      'floatHeaderOptions' => ['scrollingTop' => true],
-      'responsive'=>true,
-      'striped'=>true,
-      'hover'=>true,
-      'bordered' => true,
-      'panel' => [
-         'heading'=>'<h3 class="panel-title">Samples</h3>',
-         'type'=>'primary',
-         'before' => '',
-         'after'=>false,
-      ],
-      'toolbar' => false,
-        'columns' => [
-               [
-            'class' => '\kartik\grid\CheckboxColumn',
-         ],
-            'samplename',
-            [
-                'attribute'=>'description',
-                'format' => 'raw',
-                'enableSorting' => false,
-                'value' => function($data){
-                    return ($data->request->lab_id == 2) ? "Sampling Date: <span style='color:#000077;'><b>".$data->sampling_date."</b></span>,&nbsp;".$data->description : $data->description;
-                },
-                'contentOptions' => ['style' => 'width:70%; white-space: normal;'],
-            ],
-        ],
-    ]); ?>
+      ]);?>
+ 
 
+  </div>
+</div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <?php echo Html::label('Sample Type'); ?>
+      <?= Select2::widget([
+          'name'=>'thesampletypes',
+          'data' => $sampletypewithlab,
+          'options' => [
+            'placeholder' => 'Select sample type...',
+            'id'=>'the-sample-type',
+          ]
+      ]);?>
+
+
+
+    </div>
+    <div class="col-sm-6" id="testname">
+
+      <?= $form->field($model, 'test_id')->widget(DepDrop::classname(), [
+            'type'=>DepDrop::TYPE_SELECT2,
+            'data'=>$sampletype,
+            'options'=>['id'=>'sample-sample_type_id'],
+            'select2Options'=>['pluginOptions'=>['allowClear'=>true]],
+            'pluginOptions'=>[
+                'depends'=>['the-sample-type'],
+                'placeholder'=>'Select Test Name',
+                'url'=>Url::to(['/lab/analysis/listsampletype']),
+                'loadingText' => 'Loading Test Names...',
+            ]
+        ])
+        ?>
+    </div>
+  </div>
     <?= $form->field($model, 'rstl_id')->hiddenInput()->label(false) ?>
 
     <?= $form->field($model, 'pstcanalysis_id')->hiddenInput()->label(false) ?>
@@ -129,81 +130,23 @@ $this->registerJs($js);
     <?= $form->field($model, 'references')->hiddenInput()->label(false)  ?>
     <?= $form->field($model, 'fee')->hiddenInput()->label(false)  ?>
 
-    <?= Html::textInput('sample_ids', '', ['class' => 'form-control', 'id'=>'sample_ids', 'type'=>'hidden'], ['readonly' => true]) ?>
+    <?= Html::textInput('sample_ids', '', ['class' => 'form-control', 'id'=>'sample_ids','type'=>'hidden'], ['readonly' => true]) ?>
   
     <?php
         $requestquery = Request::find()->where(['request_id' => $request_id])->one();
-      
-         $category= ArrayHelper::map(Testcategory::find()
-         ->leftJoin('tbl_lab_sampletype', 'tbl_lab_sampletype.testcategory_id=tbl_testcategory.testcategory_id')
-         ->Where(['tbl_lab_sampletype.lab_id'=>$requestquery->lab_id])
-         ->orderBy(['testcategory_id' => SORT_DESC])->all(),'testcategory_id','category');
-
-        //  $category= ArrayHelper::map(Testcategory::find()
-        //  ->all(),'testcategory_id','category');
-
-        //  echo "<pre>";
-        //  var_dump($category);
-        //  echo "</pre>";
-    ?>
-      <?= Html::textInput('lab_id', $requestquery->lab_id, ['class' => 'form-control', 'id'=>'lab_id', 'type'=>'hidden'], ['readonly' => true]) ?>
-    <?= $form->field($model,'category_id')->widget(Select2::classname(),[
-                    'data' => $category,
-                    'theme' => Select2::THEME_KRAJEE,
-                    'options' => ['id'=>'sample-category_id'],
-                    'pluginOptions' => ['allowClear' => true,'placeholder' => 'Select Test Category'],
-            ])->label("Test Category")
     ?>
 
-    <div class="row">
-    <div class="col-sm-6">
-
-    <?= $form->field($model, 'sample_type_id')->widget(DepDrop::classname(), [
-            'type'=>DepDrop::TYPE_SELECT2,
-            'data'=>$testcategory,
-            'options'=>['id'=>'sample-type_id'],
-            'select2Options'=>['pluginOptions'=>['allowClear'=>true]],
-            'pluginOptions'=>[
-                'depends'=>['sample-category_id'],
-                'placeholder'=>'Select Sample Type',
-                'url'=>Url::to(['/lab/analysis/listtype']),
-                'loadingText' => 'Loading Sample Types...',
-            ]
-        ])->label("Sample Type")
-        ?>
-
-    </div>
-    <div class="col-sm-6">
-
-        <?= $form->field($model, 'test_id')->widget(DepDrop::classname(), [
-            'type'=>DepDrop::TYPE_SELECT2,
-            'data'=>$sampletype,
-            'options'=>['id'=>'sample-sample_type_id'],
-            'select2Options'=>['pluginOptions'=>['allowClear'=>true]],
-            'pluginOptions'=>[
-                'depends'=>['sample-type_id'],
-                'placeholder'=>'Select Test Name',
-                'url'=>Url::to(['/lab/analysis/listsampletype']),
-                'loadingText' => 'Loading Test Names...',
-            ]
-        ])
-        ?>
-    </div>
-</div>
-
+    <?= Html::textInput('lab_id', $requestquery->lab_id, ['class' => 'form-control', 'id'=>'lab_id', 'type'=>'hidden'], ['readonly' => true]) ?>
      
     <div id="methodreference">
-    </div>
-       
+    </div>       
 
     <div class="row-fluid" id ="xyz">
-        <div>
-   
-   
+    </div>
 
 
     <div class="row" style="float: right;padding-right: 30px">
-    <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary', 'id'=>'analysis_create', 'disabled'=> true]) ?>
+    <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary', 'id'=>'analysis_create','disabled'=>true]) ?>
         <?php if($model->isNewRecord){ ?>
         <?php } ?>
     <?= Html::Button('Cancel', ['class' => 'btn btn-default', 'id' => 'modalCancel', 'data-dismiss' => 'modal']) ?>
@@ -215,91 +158,15 @@ $this->registerJs($js);
     <?php ActiveForm::end(); ?>
 </div>
 
-<?php
-$this->registerJs("$('#sample-test_id').on('depdrop:afterChange',function(){
-    var id = $('#sample-test_id').val();
-        $.ajax({
-            url: '".Url::toRoute("analysis/gettest")."',
-            dataType: 'json',
-            method: 'GET',
-            data: {method_reference_id: id},
-            success: function (data, textStatus, jqXHR) {
-                $('#analysis-references').val(data.references);
-                $('#analysis-fee').val(data.fee);
-                $('#analysis-fee-disp').val(data.fee);
-                $('.image-loader').removeClass( \"img-loader\" );
-            },
-            beforeSend: function (xhr) {
-                //alert('Please wait...');
-                $('.image-loader').addClass( \"img-loader\" );
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log('An error occured!');
-                alert('Error in ajax request');
-            }
-        });
-});");
-?>
-
-
-<?php
-$this->registerJs("$('#sample-test_id').on('change',function(){
-    var id = $('#sample-test_id').val();
-        $.ajax({
-            url: '".Url::toRoute("analysis/gettest")."',
-            dataType: 'json',
-            method: 'GET',
-            data: {method_reference_id: id},
-            success: function (data, textStatus, jqXHR) {
-               
-           
-                $('#analysis-references').val(data.references);
-                $('#analysis-fee').val(data.fee);
-                $('#analysis-fee-disp').val(data.fee);
-                $('.image-loader').removeClass( \"img-loader\" );
-                $('.image-loader').removeClass( \"img-loader\" );
-            },
-            beforeSend: function (xhr) {
-                //alert('Please wait...');
-                $('.image-loader').addClass( \"img-loader\" );
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log('An error occured!');
-                alert('Error in ajax request');
-            }
-        });
-});");
-?>
-
-
-<!-- <script type="text/javascript">
-    $('#sample-test_id').on('change',function(e) {
-       e.preventDefault();
-         jQuery.ajax( {
-            type: 'GET',
-            url: '/lab/analysis/getmethod?id='+$(this).val(),
-            dataType: 'html',
-            success: function ( response ) {        
-              $("#xyz").html(response);
-            },
-            error: function ( xhr, ajaxOptions, thrownError ) {
-                alert( thrownError );
-            }
-        });
-    });
-    </script> -->
-
-
     <script type="text/javascript">
     $('#sample-sample_type_id').on('change',function() {
         $.ajax({
-            url: '/lab/analysis/gettestnamemethod?id='+$(this).val(),
+            url: '/lab/analysis/gettestnamemethod',
             method: "GET",
             dataType: 'html',
-            data: { lab_id: $('#lab_id').val(),
-            testcategory_id: 29,
-            sampletype_id: 4,
-            testname_id: $('#method_id').val()},
+            data: { sample: $('#base-sample').val(),
+            sampletype_id: $('#the-sample-type').val(),
+            testname_id: $(this).val()},
             beforeSend: function(xhr) {
                $('.image-loader').addClass("img-loader");
                }
@@ -309,4 +176,17 @@ $this->registerJs("$('#sample-test_id').on('change',function(){
                 $('.image-loader').removeClass("img-loader");  
             });
     });
+
+
+
+
+    $('#base-sample').on('change',function() {
+        var samples = $(this).val();
+        if(samples == '')
+          $('#analysis_create').prop('disabled',true);
+        else
+          $('#analysis_create').prop('disabled',false);
+    });
+
+
 </script>

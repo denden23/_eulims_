@@ -24,6 +24,7 @@ use common\models\referral\Agency;
 class ReferralFunctions extends Component
 {
 	public $source = 'https://eulimsapi.onelab.ph';
+	//public $source = 'http://localhost/eulimsapi.onelab.ph';
 
 	//check if the agency is notified
 	function checkNotified($referralId,$recipientId)

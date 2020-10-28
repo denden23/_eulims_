@@ -278,7 +278,7 @@ class CashierController extends \yii\web\Controller
             ]);
 			$check_sum = Check::find()->where(['receipt_id' => $receiptid])
                  ->sum('amount');
-			$walletpay_sum= Customertransaction::find()->where(['source' => $receiptid])->sum('amount');	 
+			$walletpay_sum= Customertransaction::find()->where(['source' => $receiptid,'transactiontype'=>1])->sum('amount');	 
         }else{
             $checkDataProvider ="";
         }
@@ -472,9 +472,12 @@ class CashierController extends \yii\web\Controller
             ->from('eulims_finance.tbl_receipt')
             ->where(['deposit_type_id' => $deposit_type_id])
             ->andWhere(['or_series_id' => $or_series_id]) 
-            ->andWhere(['deposit_id'=>null]) 
+            ->andWhere(['deposit_id'=>null])
+            ->andWhere(['cancelled'=>0]) 
             ->andWhere(['between', 'or_number',$start_or,$end_or])
             ->sum('total');
+		
+	
         if($id == '' ){
             echo '';
         }
@@ -630,7 +633,8 @@ class CashierController extends \yii\web\Controller
                    if ($sum > $total_collection){
                        Yii::$app->session->setFlash('info','Excess amount will be credited to customer wallet!');
                        $total= $sum - $total_collection;
-                       $source= "From Receipt #:".$receipt->or_number.", Check #:".$model->checknumber;
+                      // $source= "From Receipt #:".$receipt->or_number.", Check #:".$model->checknumber;
+                       $source=$receiptid;
                        $func->SetWallet($customer_id, $total, $source,0);
 					   
 					   $model_excess = new ExcessPayment();
@@ -638,6 +642,8 @@ class CashierController extends \yii\web\Controller
 					   $model_excess->check_id=$model->check_id;
 					   $model_excess->amount=$total;
 					   $model_excess->save();
+					   $receipt->total= $receipt->total + $total;
+                       $receipt->save();					   
 					  
                    } 
                 }
@@ -817,7 +823,11 @@ class CashierController extends \yii\web\Controller
                 $searchModel = new RequestSearch();
                 //$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
                 //$dataProvider->pagination->pageSize=500;
-                  $query = Request::find()->where(['not', ['posted' => 1]]);
+				  $receipt=Receipt::find()->where(['receipt_id' => $receiptid])->one();
+				  $opid=$receipt->orderofpayment_id;
+				  $op=Op::find()->where(['orderofpayment_id' => $opid])->one();
+				  $customerid=$op->customer_id;
+                  $query = Request::find()->where(['not', ['posted' => 1]])->andWhere(['customer_id' =>$customerid]);
                     $dataProvider = new ActiveDataProvider([
                         'query' => $query,
                     ]); 
@@ -954,10 +964,53 @@ class CashierController extends \yii\web\Controller
 		 $wallet=Customerwallet::find()->where(['customer_id'=>$customer_id])->sum('balance');
 		 $total=0;
 		 
-		 if($wallet > $totaldue){
+		 if($wallet >= $totaldue){
 			$func->SetWallet($customer_id, $totaldue, $id,1); 
 			Yii::$app->session->setFlash('info','Transaction Saved!');
             return $this->redirect(['/finance/cashier/viewreceipt', 'receiptid' => $id]);
 		 } 
     }
+	
+	public function actionUpdate($id)
+    {
+       
+		 $model=$this->findModelReceipt($id);	
+		  if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success','Successfully updated!');
+            return $this->redirect(['/finance/cashier/viewreceipt', 'receiptid' => $id]);
+          }
+          if($model->orderofpayment_id == 0 || $model->orderofpayment_id == NULL){
+            $op_model ="";
+          }
+          else{
+            $op_model=$this->findModel($model->orderofpayment_id); 
+          }
+        return $this->renderAjax('receipt/update', [
+            'model' => $model,
+            'op_model'=> $op_model,
+        ]);
+    }
+    
+    public function actionRemovePaymentitem($paymentitemid)
+    {
+        $model = $this->findModelPaymentitem($paymentitemid);
+        $session = Yii::$app->session;
+       
+        if($model->delete()) {
+            Yii::$app->session->setFlash('success','Successfully Removed!');
+            return $this->redirect(['/finance/cashier/viewreceipt?receiptid='.$model->receipt_id]);
+        }else {
+            return $model->error();
+        }
+    }
+
+    protected function findModelPaymentitem($paymentitemid)
+   {
+       if (($model = Paymentitem::findOne($paymentitemid)) !== null) {
+           return $model;
+       } else {
+           throw new NotFoundHttpException('The requested page does not exist.');
+       }
+   }
+    
 }

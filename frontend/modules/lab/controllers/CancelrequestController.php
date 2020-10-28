@@ -12,6 +12,7 @@ use common\models\lab\Request;
 use common\models\finance\Paymentitem;
 use common\models\lab\Sample;
 use common\components\Functions;
+use common\models\system\Profile;
 /**
  * CancelrequestController implements the CRUD actions for Cancelledrequest model.
  */
@@ -60,89 +61,66 @@ class CancelrequestController extends Controller
     }
 
     /**
+    /*
+    Created By: Bergel T. Cutara
+    Contacts:
+
+    Email: b.cutara@gmail.com
+    Tel. Phone: (062) 991-1024
+    Mobile Phone: (639) 956200353
+
+    Description: CAncels the Request (cancel status = 0, if the request has payment items or receipt then the request cannot be cancelled.
+
      * Creates a new Cancelledrequest model.
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return mixed
      */
     public function actionCreate()
     {
+
         $get= \Yii::$app->request->get();
         $model = new Cancelledrequest();
-        //echo "<pre>";
-        //var_dump(Yii::$app->request->post());
-        //echo "</pre>";
+
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            //Check if this request is already been cancelled
-            $FinanceSuccess=false;
-            $Connection= Yii::$app->labdb;
-            $Transaction =$Connection->beginTransaction();
-            //Update Request
             $Request= Request::find()->where(['request_id'=>$model->request_id])->one();
             $Request->status_id=0;//Cancelled
-            $Request->payment_status_id=0;
-            $request_id=$model->request_id;
-            // Update Receipt
-            $SQLReceipt="SELECT GROUP_CONCAT(`receipt_id`) FROM `tbl_paymentitem` WHERE `request_id`=:request_id";
-            $FinanceConnection=Yii::$app->financedb;
-            $FinanceTransaction =$FinanceConnection->beginTransaction();
-            $Command=$FinanceConnection->createCommand($SQLReceipt);
-            $Command->bindValue(":request_id", $request_id);
-            $recept_ids=$Command->execute();
-            //$query = (new \yii\db\Query())->from('tbl_paymentitem')->where(['request_id'=>$model->request_id]);
-            //$sum = $query->sum('amount');
-            if($Request->save(false)){//Check if there is sample
-                $exRequest=new Functions();
-                $HasReceipt=$exRequest->IsRequestHasReceipt($Request->request_id);
-                if($HasReceipt){
-                    //Get the total amount from receipt
-                    $TotalAmountSQL="SELECT SUM(`total`) AS TotalSum FROM `tbl_receipt` WHERE `receipt_id` IN($recept_ids)";
-                    $Command2=$Connection->createCommand($TotalAmountSQL);
-                    $TotalAmountOfReceipt=$Command2->execute();
-                    // update Receipt
-                    $ReceiptUpdate="UPDATE `tbl_receipt` SET `receipt_status_id`=2 WHERE `receipt_id` IN($recept_ids)";
-                    //Execute command
-                    $Command3=$Connection->createCommand($ReceiptUpdate);
-                    $Command3->execute();
-                    // Execute action to save to wallet
-                    $func=new Functions();
-                    $ISCredit=0;
-                    $customer_id=$Request->customer_id;
-                    $FinanceSuccess=$func->SetWallet($customer_id,$TotalAmountOfReceipt, $recept_ids, $ISCredit);
-                }
-                $SampleCount= Sample::find()->where(['request_id'=>$model->request_id])->count();
-                if($SampleCount>0){
-                    return $this->redirect(['/lab/sample/cancel', 'id' => $model->request_id]);
-                }else{
-                    Yii::$app->session->setFlash('success', 'Request Successfully Cancelled!');
-                    $Transaction->commit();
-                    $FinanceTransaction->commit();
-                    return $this->redirect(['/lab/request/view', 'id' => $model->request_id]); 
-                }
-            }else{
-                Yii::$app->session->setFlash('danger', 'Request Failed to Cancelled!');
-                $Transaction->rollback();
-                $FinanceTransaction->rollback();
+            if($Request->save(false))
                 return $this->redirect(['/lab/request/view', 'id' => $model->request_id]); 
-            }
+
+            return $this->redirect(['/lab/request/',]); 
+           
         } else {
+
             $Request_id=$get['req'];
+            //Gets the details of the Request
+            $request=  Request::find()->where(['request_id'=>$Request_id])->one();
             $model->cancel_date=date('Y-m-d H:i:s');
+            $model->request_ref_num=$request->request_ref_num;
+            $model->request_id=$request->request_id;
+            $model->cancelledby= Yii::$app->user->id;
+
+            // Query Profile Name
+            $Profile= Profile::find()->where(['user_id'=> Yii::$app->user->id])->one();
+            $UserCancel=$Profile->fullname;
+
+            //Gets to know if the Request already have the payment items
             $HasOP= Paymentitem::find()->where(['request_id'=>$Request_id])->count();
-            $exRequest=new Functions();
-            $HasReceipt=$exRequest->IsRequestHasReceipt($Request_id);
+
             if(\Yii::$app->request->isAjax){
                 return $this->renderAjax('create', [
                     'model' => $model,
                     'Req_id'=> $Request_id,
                     'HasOP'=>$HasOP,
-                    'HasReceipt'=>$HasReceipt
+                    'request'=>$request,
+                    'UserCancel'=>$UserCancel
                 ]);
             }else{
                 return $this->render('create', [
                     'model' => $model,
                     'Req_id'=> $Request_id,
                     'HasOP'=>$HasOP,
-                    'HasReceipt'=>$HasReceipt
+                    'request'=>$request,
+                    'UserCancel'=>$UserCancel
                 ]);
             }
         }

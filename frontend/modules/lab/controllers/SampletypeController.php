@@ -116,6 +116,45 @@ class SampletypeController extends Controller
 
     }
 
+    /**
+     * Creates a new Sampletype model.
+     * If creation is successful, the browser will be redirected to the 'testnamemethod/index' page.
+     /*
+        Created By: Bergel T. Cutara
+        Contacts:
+
+        Email: b.cutara@gmail.com
+        Tel. Phone: (062) 991-1024
+        Mobile Phone: (639) 956200353
+
+        Description: This action is performed by the testnamemethod.
+     * @return mixed
+     */
+    public function actionCreatebytestnamemethod()
+    {
+        $model = new Sampletype();
+        $post= Yii::$app->request->post();
+        if ($model->load(Yii::$app->request->post())) {
+
+          $sampletype = Sampletype::find()->where(['type'=> $post['Sampletype']['type']])->one();
+
+          if ($sampletype){
+            return $this->redirect(['/lab/testnamemethod']);
+          }else{
+            $model->save();
+            return $this->redirect(['/lab/testnamemethod']);
+          }
+         
+        }
+
+        if(Yii::$app->request->isAjax){
+            return $this->renderAjax('_form', [
+                'model' => $model,
+            ]);
+        }
+
+    }
+
     public function actionCreatesampletype()
     {
         $model = new Sampletype();

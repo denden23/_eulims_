@@ -40,6 +40,7 @@ use common\models\system\Profile;
         'dataProvider' => $analysisdataprovider,
         'id'=>'analysis-grid',
         'pjax' => true,
+        'toolbar' => false,
         'pjaxSettings' => ['options' => ['id' => 'kv-pjax-container-analysis']],
             'pjaxSettings' => [
                 'options' => [

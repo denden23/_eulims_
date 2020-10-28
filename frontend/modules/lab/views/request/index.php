@@ -11,10 +11,13 @@ use common\models\lab\Request;
 use common\components\Functions;
 use common\models\lab\Customer;
 use common\models\lab\Sample;
+use common\models\lab\Analysis;
 use common\models\lab\RequestType;
+use common\models\lab\Status;
 use yii\bootstrap\Modal;
 use common\models\finance\Paymentitem;
 use yii\helpers\Url;
+
 /* @var $this yii\web\View */
 /* @var $searchModel common\models\lab\RequestSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
@@ -25,20 +28,44 @@ $this->params['breadcrumbs'][] = $this->title;
 $func=new Functions();
 $Header="Department of Science and Technology<br>";
 $Header.="Laboratory Request";
-if(Yii::$app->user->can('allow-cancel-request')){
-    $Button="{view}{update}{delete}";
-}else{
-    $Button="{view}{update}";
+
+$Button="{view}"; 
+//get the roles of the current logged user
+$roles = \Yii::$app->authManager->getRolesByUser(\Yii::$app->user->id);
+foreach ($roles as $role) {
+    //if the user has the role of these two then actioncgridview will not display the specific action buttons 
+    if(($role->name == "pro-MANAGER")or($role->name == "super-administrator"))
+        $Button="{view}{update}{delete}";
+
 }
+
+$js=<<<JS
+
+    $(document).on('pjax:complete', function() {
+        $('#requestsearch-request_datetime').kvDatepicker({
+            format : 'yyyy-mm-dd',
+            autoclose : true,
+            allowClear : true
+        });
+    });
+JS;
+
+$this->registerJs($js,\yii\web\View::POS_READY);
 
 ?>
 
 <div class="request-index">
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-    <?php
-        echo $func->GenerateStatusLegend("Legend/Status",false);
-    ?>
-    <?= GridView::widget([
+
+    <fieldset>
+        <legend>Legends - Report Status</legend>
+        <div>
+            <span class="badge btn-success">Report Generated</span>
+            <span class="badge btn-warning">Report Nearly Due</span>
+            <span class="badge btn-danger">Urgent Action Needed</span>
+        </div>
+    </fieldset>
+    <?php 
+    echo  GridView::widget([
         'dataProvider' => $dataProvider,
         'id'=>'RequestGrid',
         'filterModel' => $searchModel,
@@ -53,25 +80,38 @@ if(Yii::$app->user->can('allow-cancel-request')){
         'panel' => [
             'type' => GridView::TYPE_PRIMARY,
             'heading' => '<i class="glyphicon glyphicon-book"></i>  Request',
-            //'before'=> (Yii::$app->user->identity->profile->rstl_id > 100) ? "<button type='button' onclick='LoadModal(\"Create Referral Request\",\"/lab/request/createreferral\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Referral Request</button>" : "<button type='button' onclick='LoadModal(\"Create Request\",\"/lab/request/create\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Request</button>&nbsp;&nbsp;&nbsp;<button type='button' onclick='LoadModal(\"Create Referral Request\",\"/lab/request/createreferral\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Referral Request</button>",
-			'before'=> (Yii::$app->user->identity->profile->rstl_id > 100) ? "<button type='button' onclick='LoadModal(\"Create Request\",\"/lab/request/create\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Request</button>" : "<button type='button' onclick='LoadModal(\"Create Request\",\"/lab/request/create\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Request</button>&nbsp;&nbsp;&nbsp;<button type='button' onclick='LoadModal(\"Create Referral Request\",\"/lab/request/createreferral\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Referral Request</button>",
+			'before'=> (Yii::$app->user->identity->profile->rstl_id > 100) ? "<button type='button' onclick='LoadModal(\"Create Request\",\"/lab/request/create\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Request</button>" : "<button type='button' onclick='LoadModal(\"Create Request\",\"/lab/request/create\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Request</button>&nbsp;&nbsp;&nbsp;<button type='button' onclick='LoadModal(\"Create Referral Request\",\"/lab/request/createreferral\")' class=\"btn btn-success\"><i class=\"fa fa-book-o\"></i> Create Referral Request</button>&nbsp;&nbsp;&nbsp;<button type='button' value = '/lab/request/notifyreportdue' onclick='location.href=this.value' class=\"btn btn-primary\"><i class=\"glyphicon glyphicon-send\"></i> Notify Report Due</button>",
         ],
         'pjax' => true, // pjax is set to always true for this demo
         'pjaxSettings' => [
             'options' => [
                     'enablePushState' => false,
               ],
+              
         ],
         'rowOptions' => function($model){
-            $Obj=$model->getPaymentStatusDetails($model->request_id);
-            if($Obj){
-                $class=$Obj[0]['class'];
-                $objClass= explode('-', $class);
-                $nClass=$objClass[1];
-            }else{
-                $nClass="btn-default";
-            }
-            return ['class'=>$nClass];
+            $stats = Status::findOne($model->status_id);
+
+            //Bergel Cutara, Sr. srs
+            //Description : returns the status of the request which defines what css the row appear on the cgridview 
+
+            //the sequence how the code is written is base on the superiority of the status
+            //STATUS: report Generated
+            if($model->testreports)
+                return ['class'=>'success'];
+            //STATUS : report nearly due
+            $date1=date_create(date('Y-m-d'));
+            $date2=date_create($model->report_due);
+            $diff=date_diff($date1,$date2);
+
+            if($date2 <= $date1)
+                return ['class'=>'danger'];
+
+            if((int)$diff->format('%a') < 4)
+                return ['class'=>'warning']; 
+ 
+            //return whatever the status_id the request has
+            return ['class'=>$stats->class];
         },
         'exportConfig'=>$func->exportConfig("Laboratory Request", "laboratory request", $Header),
         'columns' => [
@@ -88,15 +128,14 @@ if(Yii::$app->user->can('allow-cancel-request')){
                     return ($model->request_type_id == 2 && $model->request_datetime == '0000-00-00 00:00:00') ? null : date('d/m/Y H:i:s',strtotime($model->request_datetime));
                 },
                 'filter'=>DatePicker::widget([
+                    'attribute'=>'request_datetime',
                     'model' => $searchModel,
-                    'attribute' => 'request_datetime',
-                    'value' => date('d-M-Y', strtotime('+2 days')),
-                    'options' => ['placeholder' => 'Select date ...'],
+                    'type' => DatePicker::TYPE_INPUT,
                     'pluginOptions' => [
                         'format' => 'yyyy-mm-dd',
-                        'todayHighlight' => true
-                    ],
-                    //'contentOptions' => ['style' => 'width: 20%;word-wrap: break-word;white-space:pre-line;'],
+                        'autoclose'=>true,
+                        'allowClear' => true
+                    ]
                 ]),
             ],
             [
@@ -138,20 +177,23 @@ if(Yii::$app->user->can('allow-cancel-request')){
                 'format'=>'raw',
                 'width' => '110px',
                 'value'=>function($model){
-         
-                    $samples_count= Sample::find() 
-                    ->leftJoin('tbl_request', 'tbl_request.request_id=tbl_sample.request_id')    
+                    if($model->status_id==0)
+                        return Html::button('<span"><b>CANCELLED</span>', ['class' => 'btn btn-warning', 'style'=>'width:110px;']);
+
+                    $samples_count= Analysis::find()
+                    ->leftJoin('tbl_sample', 'tbl_sample.sample_id=tbl_analysis.sample_id')
+                    ->leftJoin('tbl_request', 'tbl_request.request_id=tbl_sample.request_id')
+                    ->leftJoin('tbl_tagging', 'tbl_analysis.analysis_id=tbl_tagging.analysis_id')   
                     ->where(['tbl_request.request_id'=>$model->request_id ])
                     ->all();              
-                    $requestcount= Sample::find()
-                    ->leftJoin('tbl_request', 'tbl_sample.request_id=tbl_request.request_id')
-                    ->leftJoin('tbl_analysis', 'tbl_sample.sample_id=tbl_analysis.sample_id')
-                    ->leftJoin('tbl_tagging_analysis', 'tbl_analysis.analysis_id=tbl_tagging_analysis.cancelled_by')
-                    ->where(['tbl_tagging_analysis.tagging_status_id'=>2, 'tbl_request.request_id'=>$model->request_id ])   
-                    ->all();                  
+                    $sampletagged= Analysis::find()
+                    ->leftJoin('tbl_sample', 'tbl_sample.sample_id=tbl_analysis.sample_id')
+                    ->leftJoin('tbl_tagging', 'tbl_analysis.analysis_id=tbl_tagging.analysis_id') 
+                    ->leftJoin('tbl_request', 'tbl_request.request_id=tbl_analysis.request_id')    
+                    ->where(['tbl_tagging.tagging_status_id'=>2, 'tbl_request.request_id'=>$model->request_id ])
+                    ->all();
                     $scount = count($samples_count); 
-                    $rcount = count($requestcount); 
-                    
+                    $rcount = count($sampletagged); 
                     if ($rcount==0){
                         return Html::button('<span"><b>PENDING</span>', ['value'=>Url::to(['/lab/tagging/samplestatus','id'=>$model->request_id]),'onclick'=>'LoadModal(this.title, this.value, true, 1200);', 'class' => 'btn btn-default','title' => Yii::t('app', "Analyses Monitoring"), 'style'=>'width:110px;']);
                         
@@ -174,7 +216,17 @@ if(Yii::$app->user->can('allow-cancel-request')){
                         //return "<a class='badge badge-success' href='/reports/lab/testreport/view?id=".$req->testreports[0]->testreport_id."' style='width:80px!important;height:20px!important;'>View</a>";
                         return Html::button('<span"><b>VIEW</span>', ['value'=>Url::to(['/lab/request/reportstatus','id'=>$model->request_id]),'onclick'=>'LoadModal(this.title, this.value, true, 500);', 'class' => 'btn btn-success','title' => Yii::t('app', "Report Status"), 'style'=>'width:100px']);
                     }else{
-                        //return "<span class='badge badge-default' style='width:80px!important;height:20px!important;'>None</span>";
+                        //STATUS : report nearly due
+                        $date1=date_create(date('Y-m-d'));
+                        $date2=date_create($model->report_due);
+                        $diff=date_diff($date1,$date2);
+
+                        if($date2 <= $date1)
+                            return Html::button('<span"><b>NONE</span>', ['value'=>Url::to(['/lab/request/reportstatus','id'=>$model->request_id]),'onclick'=>'LoadModal(this.title, this.value, true, 500);', 'class' => 'btn btn-danger','title' => Yii::t('app', "Report Status"), 'style'=>'width:100px']);
+
+                        if((int)$diff->format('%a') < 4)
+                            return Html::button('<span"><b>NONE</span>', ['value'=>Url::to(['/lab/request/reportstatus','id'=>$model->request_id]),'onclick'=>'LoadModal(this.title, this.value, true, 500);', 'class' => 'btn btn-warning','title' => Yii::t('app', "Report Status"), 'style'=>'width:100px']);
+
                         return Html::button('<span"><b>NONE</span>', ['value'=>Url::to(['/lab/request/reportstatus','id'=>$model->request_id]),'onclick'=>'LoadModal(this.title, this.value, true, 500);', 'class' => 'btn btn-default','title' => Yii::t('app', "Report Status"), 'style'=>'width:100px']);
                     }
                     
@@ -228,24 +280,29 @@ if(Yii::$app->user->can('allow-cancel-request')){
                 'buttons' => [
                     
                     'view' => function ($url, $model){
-                        return Html::button('<span class="glyphicon glyphicon-eye-open"></span>', ['value' => '/lab/request/view?id=' . $model->request_id,'onclick'=>'location.href=this.value', 'class' => 'btn btn-primary', 'title' => Yii::t('app', "View Request")]);
+                        return Html::button('<span class="glyphicon glyphicon-eye-open"></span>', ['value' => '/lab/request/view?id=' . $model->request_id,'onclick'=>'window.open(this.value)','target'=>'_blank', 'class' => 'btn btn-primary', 'title' => Yii::t('app', "View Request")]);
                     },
                     'update' => function ($url, $model) {
-                        return Html::button('<span class="glyphicon glyphicon-pencil"></span>', ['value' => $model->request_type_id == 2 ? '/lab/request/updatereferral?id='. $model->request_id : '/lab/request/update?id='. $model->request_id , 'onclick' => 'LoadModal(this.title, this.value);', 'class' => 'btn btn-success', 'title' => $model->request_type_id == 2 ? Yii::t('app', "Update Referral Request") : Yii::t('app', "Update Request")]);
+                        return (!empty($model->request_ref_num) && $model->request_type_id == 2) ? '' : (Html::button('<span class="glyphicon glyphicon-pencil"></span>', ['value' => $model->request_type_id == 2 ? '/lab/request/updatereferral?id='. $model->request_id : '/lab/request/update?id='. $model->request_id , 'onclick' => 'LoadModal(this.title, this.value);', 'class' => 'btn btn-success', 'title' => $model->request_type_id == 2 ? Yii::t('app', "Update Referral Request") : Yii::t('app', "Update Request")]));
                     },
                     'delete' => function ($url, $model) { //Cancel
-                        if($model->IsRequestHasOP()){
-                            if($model->IsRequestHasReceipt()){
-                                return Html::button('<span class="glyphicon glyphicon-ban-circle"></span>', ['value' => '/lab/cancelrequest/create?req=' . $model->request_id,'onclick' => 'LoadModal(this.title, this.value,true,"420px");', 'class' => 'btn btn-danger', 'title' => Yii::t('app', "Cancel Request")]);
+                        if(!empty($model->request_ref_num) && $model->request_type_id == 2) {
+                            return '';
+                        } else {
+                            if($model->IsRequestHasOP()){
+                                if($model->IsRequestHasReceipt()){
+                                    return Html::button('<span class="glyphicon glyphicon-ban-circle"></span>', ['value' => '/lab/cancelrequest/create?req=' . $model->request_id,'onclick' => 'LoadModal(this.title, this.value,true,"420px");', 'class' => 'btn btn-danger', 'title' => Yii::t('app', "Cancel Request")]);
+                                }else{
+                                    return Html::button('<span class="glyphicon glyphicon-ban-circle"></span>', ['class' => 'btn btn-danger','disabled'=>true, 'title' => Yii::t('app', "Cancel Request")]);
+                                }
                             }else{
-                                return Html::button('<span class="glyphicon glyphicon-ban-circle"></span>', ['class' => 'btn btn-danger','disabled'=>true, 'title' => Yii::t('app', "Cancel Request")]);
+                                return Html::button('<span class="glyphicon glyphicon-ban-circle"></span>', ['value' => '/lab/cancelrequest/create?req=' . $model->request_id,'onclick' => 'LoadModal(this.title, this.value,true,"420px");', 'class' => 'btn btn-danger', 'title' => Yii::t('app', "Cancel Request")]);
                             }
-                        }else{
-                            return Html::button('<span class="glyphicon glyphicon-ban-circle"></span>', ['value' => '/lab/cancelrequest/create?req=' . $model->request_id,'onclick' => 'LoadModal(this.title, this.value,true,"420px");', 'class' => 'btn btn-danger', 'title' => Yii::t('app', "Cancel Request")]);
                         }
                     }
                 ],
             ],
         ],
-]); ?>
+]); 
+?>
 </div>

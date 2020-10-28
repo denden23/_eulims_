@@ -40,6 +40,8 @@ use yii\helpers\ArrayHelper;
 use yii\data\ArrayDataProvider;
 use common\models\lab\Lab;
 
+use common\components\Notification;
+
 //use yii\helpers\Url;
 /**
  * RequestController implements the CRUD actions for Request model.
@@ -120,7 +122,6 @@ class RequestController extends Controller
             $ids = ['-1'];
         }
 
-      //  $analysisQuery = Analysis::find()->where(['sample_id' =>$samples->sample_id]);
         if($request_type == 2) {
             $refcomponent = new ReferralComponent();
             $modelref_request = Referralrequest::find()->where(['request_id'=>$id])->one();
@@ -131,31 +132,37 @@ class RequestController extends Controller
 
             $analysisdataprovider = new ActiveDataProvider([
                 'query' => $analysisQuery,
-                /*'pagination' => [
-                    'pageSize' => 10,
-                ]*/
                 'pagination' => false,
             ]);
-
+            //gets the customer on the API //updated to new api //btc
             $customer = json_decode($refcomponent->getCustomerOne($reqModel->customer_id),true);
+            //gets all the matching agency ??? hard to maintain, needs inovative idea here //btc 
             $agency = json_decode($refcomponent->listMatchAgency($id),true);
+
+            //gets the attachement details ??? //btc
 			//set third parameter to 1 for attachment type deposit slip
+            //updated to new api with false return temporarily //btc
             $deposit = json_decode($refcomponent->getAttachment($reqModel->referral_id,Yii::$app->user->identity->profile->rstl_id,1),true);
             //set third parameter to 2 for attachment type or
+            //updated to new api with false return temporarily //btc
             $or = json_decode($refcomponent->getAttachment($reqModel->referral_id,Yii::$app->user->identity->profile->rstl_id,2),true);
-            $referred_agency = json_decode($refcomponent->getReferredAgency($reqModel->referral_id,Yii::$app->user->identity->profile->rstl_id),true);
 
+            //get the referred Agency details //btc
+            //updated to new api with false return temporarily //btc
+            $referred_agency = json_decode($refcomponent->getReferredAgency($reqModel->referral_id,Yii::$app->user->identity->profile->rstl_id),true);
+   
             $as_receiving = !empty($referred_agency['receiving_agency']) && $referred_agency > 0 ? $referred_agency['receiving_agency']['name'] : null;
             $as_testing = !empty($referred_agency['testing_agency']) && $referred_agency > 0 ? $referred_agency['testing_agency']['name'] : null;
-
+            //updated to new api with false return temporarily //btc
             $bid = json_decode($refcomponent->getBidderAgency($id,Yii::$app->user->identity->profile->rstl_id),true);
+            //updated to new api with false return temporarily //btc
             $countBidnotice = json_decode($refcomponent->countBidnotice($id,Yii::$app->user->identity->profile->rstl_id),true);
-
+            
             $noSampleCode = Sample::find()->where("request_id =:requestId AND ISNULL(sample_code)",[':requestId'=>$id])->count();
 
             if($bid == 0){
                 $countBid = 0;
-                $bidder = [];
+                $bidders = [];
             } else {
                 $countBid = $bid['count_bid'];
                 if($countBid > 0){
@@ -330,8 +337,9 @@ class RequestController extends Controller
        if(isset($_GET['request_id'])){
         $id = $_GET['request_id'];
         $mpdf = new \Mpdf\Mpdf([
-            'format' => [50,66], 
+            'format' => [60,66], 
             'orientation' => 'L',
+            'tempDir' => sys_get_temp_dir().DIRECTORY_SEPARATOR.'mpdf'
         ]);
         $request = Request::find()->where(['request_id' => $id]);
         $samplesquery = Sample::find()->where(['request_id' => $id])->all();
@@ -420,25 +428,58 @@ class RequestController extends Controller
   
     public function actionSaverequestransaction(){
         $post= Yii::$app->request->post();
-        // echo $post['request_id'];
-        //exit;
+
         $return="Failed";
         $request_id=(int) $post['request_id'];
         $lab_id=(int) $post['lab_id'];
         $rstl_id=(int) $post['rstl_id'];
         $year=(int) $post['year'];
+		
+		//Checking for reference number
+		$chkref=Request::findOne($request_id);
+		if ($chkref->request_ref_num){
+			return $this->redirect(['view', 'id' => $request_id]); 
+		}
         // Generate Reference Number
         $func=new Functions();
-        $Proc="spGetNextGeneratedRequestCode(:RSTLID,:LabID)";
+        /*$Proc="spGetNextGeneratedRequestCode(:RSTLID,:LabID)";
         $Params=[
             ':RSTLID'=>$rstl_id,
             ':LabID'=>$lab_id
-        ];
+        ]; */
         $Connection= Yii::$app->labdb;
         $Transaction =$Connection->beginTransaction();
-        $Row=$func->ExecuteStoredProcedureOne($Proc, $Params, $Connection);
-        $ReferenceNumber=$Row['GeneratedRequestCode'];
-        $RequestIncrement=$Row['RequestIncrement'];
+       // $Row=$func->ExecuteStoredProcedureOne($Proc, $Params, $Connection);
+        ////Reference Number Removing SP 10/282020 EGG
+		$Req= Request::find()->where(['request_id'=>$request_id])->one($Connection);
+		$requestdate=$Req->request_datetime;
+		$lastnum=(new Query)
+            ->select('MAX(number) AS lastnumber')
+            ->from('eulims_lab.tbl_requestcode')
+			->where(['lab_id' => $lab_id])
+            ->one();
+		$monthyear=date('mY',strtotime($requestdate));
+		$rstl= Rstl::find()->where(['rstl_id'=>$rstl_id])->one();
+		$code=$rstl->code;
+		
+		$lab= Lab::find()->where(['lab_id'=>$lab_id])->one();
+		$labcode=$lab->labcode;
+		
+		$str_trans_num=0;
+          if($lastnum != ''){
+            $str_trans_num=$lastnum["lastnumber"] + 1;
+            $str_trans_num=str_pad($str_trans_num, 4, "0", STR_PAD_LEFT);
+              
+          }
+          else{
+              $str_trans_num='0001';
+          }
+		  
+      
+		///////////
+		$ReferenceNumber=$code."-".$monthyear."-".$labcode."-".$str_trans_num;
+        $RequestIncrement=$str_trans_num;
+		
         //Update the tbl_requestcode
         $Requestcode= Requestcode::find()->where([
             'rstl_id'=>$rstl_id,
@@ -471,12 +512,7 @@ class RequestController extends Controller
         $total = $subtotal - ($subtotal * ($rate/100));
         
         $Request->total=$total;
-        /*
-        echo "<pre>";
-        var_dump($Request);
-        echo "</pre>";
-        exit;
-        */
+
         if($Request->save(false)){
             $Func=new Functions();
             $response=$Func->GenerateSampleCode($request_id);
@@ -495,6 +531,7 @@ class RequestController extends Controller
             $return="Failed";
         }
         return $return;
+		
     }
     /**
      * Creates a new Request model.
@@ -507,12 +544,7 @@ class RequestController extends Controller
         $Func=new Functions();
         $Func->CheckRSTLProfile();
         $GLOBALS['rstl_id']=Yii::$app->user->identity->profile->rstl_id;
-        /*echo "<pre>";
-        print_r(Yii::$app->request->post());
-        echo "</pre>";
-        exit;
-         * 
-         */
+
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
            // Yii::$app->session->setFlash('success', 'Request Successfully Created!');
             return $this->redirect(['view', 'id' => $model->request_id]); ///lab/request/view?id=1
@@ -522,7 +554,7 @@ class RequestController extends Controller
             $profile= Profile::find()->where(['user_id'=> Yii::$app->user->id])->one();
             date_add($date2,date_interval_create_from_date_string("1 day"));
             $model->request_datetime=date("Y-m-d H:i:s");
-            $model->report_due=date_format($date2,"Y-m-d");
+            //$model->report_due=date_format($date2,"Y-m-d");
             $model->created_at=date('U');
             $model->rstl_id= Yii::$app->user->identity->profile->rstl_id;//$GLOBALS['rstl_id'];
             $model->payment_type_id=1;
@@ -626,7 +658,7 @@ class RequestController extends Controller
         if ($model!== null) {
             return $model;
         } else {
-            throw new NotFoundHttpException('The requested Request its either does not exist or you have no permission to view it.');
+            throw new NotFoundHttpException('The Request is either not existing or you have no permission to view it.');
         }
     }
     //bergel cutara
@@ -638,7 +670,9 @@ class RequestController extends Controller
             $query = new Query;
             $query->select('request_id as id, request_ref_num AS text')
                     ->from('tbl_request')
-                    ->where(['like', 'request_ref_num', $q])
+                    ->where(['lab_id'=>\Yii::$app->user->identity->profile->lab_id])
+                    ->andWhere(['like', 'request_ref_num', '%'.$q,false])
+                    ->orderBy(['request_id'=>SORT_DESC])
                     ->limit(20);
             $command = $query->createCommand();
             $command->db= \Yii::$app->labdb;
@@ -663,10 +697,16 @@ class RequestController extends Controller
         $Func->CheckRSTLProfile();
         $connection= Yii::$app->labdb;
         $connection->createCommand('SET FOREIGN_KEY_CHECKS=0')->execute();
-        //$GLOBALS['rstl_id']=Yii::$app->user->identity->profile->rstl_id;
+        $GLOBALS['rstl_id']=Yii::$app->user->identity->profile->rstl_id;
+        
+        //gets the listoflabs //btc
         $labreferral = ArrayHelper::map(json_decode($refcomponent->listLabreferral()), 'lab_id', 'labname');
+        
+        //gets the list of discounts //btc
         $discountreferral = ArrayHelper::map(json_decode($refcomponent->listDiscountreferral()), 'discount_id', 'type');
+        //gets all the list of purposes //btc
         $purposereferral = ArrayHelper::map(json_decode($refcomponent->listPurposereferral()), 'purpose_id', 'name');
+        //gets all the list of modeofrelease //btc 
         $modereleasereferral = ArrayHelper::map(json_decode($refcomponent->listModereleasereferral()), 'modeofrelease_id', 'mode');
         
         if ($model->load(Yii::$app->request->post())) {
@@ -726,14 +766,16 @@ class RequestController extends Controller
                     'discountreferral' => $discountreferral,
                     'purposereferral' => $purposereferral,
                     'modereleasereferral' => $modereleasereferral,
+                    'api_url'=>$refcomponent->getSource()
                 ]);
             }else{
-                return $this->renderAjax('createReferral', [
+                return $this->render('createReferral', [
                     'model' => $model,
                     'labreferral' => $labreferral,
                     'discountreferral' => $discountreferral,
                     'purposereferral' => $purposereferral,
                     'modereleasereferral' => $modereleasereferral,
+                    'api_url'=>$refcomponent->getSource()
                 ]);
             }
         }
@@ -842,6 +884,7 @@ class RequestController extends Controller
                     'purposereferral' => $purposereferral,
                     'modereleasereferral' => $modereleasereferral,
                     'notified'=>$notified,
+                    'api_url'=>$refcomponent->getSource()
                 ]);
             }else{
                 return $this->renderAjax('updateReferral', [
@@ -851,26 +894,24 @@ class RequestController extends Controller
                     'purposereferral' => $purposereferral,
                     'modereleasereferral' => $modereleasereferral,
                     'notified'=>$notified,
+                    'api_url'=>$refcomponent->getSource()
                 ]);
             }
         }
     }
+
     //get referral customer list
     public function actionReferralcustomerlist($query = null, $id = null)
     {
-        if (!is_null($query)) {
-            $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/customers/searchname?keyword='.$query;
-            //$apiUrl='https://eulimsapi.onelab.ph/api/web/referral/customers/searchname?keyword='.$query;
+            $refcomponent = new ReferralComponent();
+            $apiUrl=$refcomponent->getSource().'/searchname?keyword='.$query;
             $curl = new curl\Curl();
             $curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
             $curl->setOption(CURLOPT_TIMEOUT, 180);
             $show = $curl->get($apiUrl);
-        } else {
-            $show = ['results' => ['id' => '', 'text' => '']];
-        }
-
-        return $show;
+            return $apiUrl;
     }
+
     //check if received sample as a tesing lab
     protected function checkTesting($requestId,$rstlId)
     {
@@ -896,5 +937,51 @@ class RequestController extends Controller
         } else {
             return 0;
         }
+    }
+	
+	 public function actionNotifysms($id,$reqid,$refnum)
+    {
+       $id = $_GET['id'];
+	   $reqid = $_GET['reqid'];
+	   $refnum = $_GET['refnum'];
+       
+       $customer = Customer::find()->where(['customer_id' => $id])->one();
+       $contactnum = $customer->tel;
+	   
+	    $notif= new Notification();
+		$title="Test Report";
+		$mes= "Good Day dear customer! Your test report for reference#: ".$refnum." is ready and available for pick-up.";
+		$res=$notif->sendSMS("", "", $contactnum, $title, $mes, "eULIMS", $this->module->id,$this->action->id);
+		$decode=Json::decode($res);
+		//var_dump($decode["data"]);
+		Yii::$app->session->setFlash('success',$decode["data"] );
+		return $this->redirect(['index']); 
+    }
+	
+	 public function actionNotifyreportdue()
+    {
+	  // $todaydate=date("Y-m-d");
+	   $tomorrow = date("Y-m-d", strtotime("+1 day"));
+	  // echo $tomorrow;
+       $request = Request::find()->where(['report_due' => $tomorrow])->all();
+	   
+		foreach ($request as $res){
+			$refnum= $res->request_ref_num;
+			$users = Profile::find()->where(['designation' => 'Lab Analyst'])->all();
+			$title="Request Report Due";
+			foreach ($users as $analyst){
+				 $contactnum = $analyst->contact_numbers;	
+				 if($contactnum){
+					 $notif= new Notification();
+					 $mes= "Hello dear analyst! There is a request due tomorrow with reference#: ".$refnum;
+					 $res=$notif->sendSMS("", "", $contactnum, $title, $mes, "eULIMS", $this->module->id,$this->action->id);
+					 $decode=Json::decode($res); 
+				 }
+			}
+           
+		}
+		
+		//Yii::$app->session->setFlash('success',$decode["data"] );
+		return $this->redirect(['index']); 
     }
 }

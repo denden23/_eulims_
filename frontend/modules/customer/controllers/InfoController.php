@@ -17,7 +17,7 @@ use yii\filters\VerbFilter;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
-use linslin\yii2\curl\Curl;
+use linslin\yii2\curl;
 use yii\data\ActiveDataProvider;
 /**
  * InfoController implements the CRUD actions for Customer model.
@@ -79,61 +79,81 @@ class InfoController extends Controller
 
     public function actionSyncrecord($id){
 
-        $model = Customer::find()->where(['customer_code'=>null,'customer_id'=>$id])->one();
-        
-
-        $curl = new Curl();
-
-         //enclose the to timeout in 20 seconds
+        $data = Customer::findOne($id);
+        // $params = (array) $data;
+        $params = [
+            'email' => $data->email,
+            'customer_id' => $data->customer_id,
+            'rstl_id' => $data->rstl_id,
+            'customer_name' =>$data->customer_name,
+            'classification_id' =>$data->classification_id,
+            'latitude' => $data->latitude,
+            'longitude' => $data->longitude,
+            'head' => $data->head,
+            'barangay_id' => $data->barangay_id,
+            'address' => $data->address,
+            'tel' => $data->tel,
+            'fax' => $data->fax,
+            'email' => $data->email,
+            'customer_type_id' => $data->customer_type_id,
+            'business_nature_id' => $data->business_nature_id,
+            'industrytype_id' => $data->industrytype_id,
+        ];
         try {
-            // $curl->setOption(CURLOPT_CONNECTTIMEOUT,5);
-            // $curl->setOption(CURLOPT_TIMEOUT, 5);
-            $response = $curl->setRawPostData(
-                 [
-                    'data' => json::encode($model),
-                 ])
-             ->post($GLOBALS['api_url']."sync_customer");
+            // $authorization = "Authorization: Bearer ".$token; 
+            $apiUrl=$GLOBALS['api_url']."message/synccustomer";
+            $curl = new curl\Curl();
+            $curl->setRequestBody(json_encode($params));
+            $curl->setOption(CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            $curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
+            $curl->setOption(CURLOPT_TIMEOUT, 180);
+            $curl->setOption(CURLOPT_SSL_VERIFYPEER, false);
+            $response = $curl->post($apiUrl);
 
-             if($response==2){
+
+            // var_dump($response); exit;
+            if($response==2){
                 //update the record's 
-                $model->sync_status = 2;
-                $model->save();
-
+                $data->sync_status = 2;
+                $data->save();
                 //notify user that the record may exist on the cloud server
-
                 echo "User's email already exist proceed to confirmation";
-             }else{
+             } elseif ($response) {
                 //update the model with the customer code
-                $model->sync_status = 1;
+                $data->sync_status = 1;
                 $response = json_decode($response);
-                $model->customer_code=$response;
-                $model->save();
+                $data->customer_code=$response;
+                $data->save();
                 //user record sync
                 echo "Customer Code Sync with ID: ".$response;
+             }
+             else{
+                echo "Error : No response from API";
              }
             
         } catch (Exception $e) {
             echo "Syncing Failed...";
         }
-        
-       
        
     }
 
     public function actionConfirmrecord($id){
 
 
-        $model = Customer::find()->where(['customer_code'=>null,'customer_id'=>$id])->one();
-        $curl = new Curl();
+        $model = Customer::findOne($id);
+        $curl = new curl\Curl();
 
         try {
-           $response = $curl->setGetParams([
+            $curl->setOption(CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            $curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
+            $curl->setOption(CURLOPT_TIMEOUT, 180);
+            $curl->setOption(CURLOPT_SSL_VERIFYPEER, false);
+            $response = $curl->setGetParams([
                 'email' => $model->email,
              ])
-             ->get($GLOBALS['api_url']."confirm");
+             ->get($GLOBALS['api_url']."message/confirm");
 
             if ($curl->errorCode === null) {
-               
                return $this->renderAjax('_view', [
                     'model' => $response,
                     'local'=>$model
@@ -152,7 +172,7 @@ class InfoController extends Controller
             $session->set('deletepopup',"Something Went Wrong!");
             return $this->redirect(['index']);
         }
-        $model = Customer::find()->where(['customer_code'=>null,'email'=>$email])->one();
+        $model = Customer::find()->where(['email'=>$email])->one();
         $model->customer_code=$code;
         $model->sync_status=1;
         if($model->save()){

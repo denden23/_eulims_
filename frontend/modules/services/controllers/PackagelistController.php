@@ -87,11 +87,6 @@ class PackagelistController extends Controller
     {
      $model = new Packagelist();
 
-    //  $request_id = $_GET['id'];
-
-    //   $request = $this->findRequest($request_id);
-    //   $labId = $request->lab_id;
-
       $testcategory = $this->listTestcategory(1);
       $sampletype = [];
 
@@ -163,11 +158,7 @@ class PackagelistController extends Controller
                      $p = $post['Packagelist']['name'];
                      $r = str_replace("," , "", $post['Packagelist']['rate']);
 
-                    //  $Connection= Yii::$app->labdb;
-                    //  $sql="UPDATE `tbl_sample` SET `package_id`=$p, `package_rate`='$r' WHERE `sample_id`=".$sample_id;
-                    //  $Command=$Connection->createCommand($sql);
-                    //  $Command->execute();
-
+        
                      $analysis = new Analysis();
                      $modelpackage =  Package::findOne(['id'=>$post['Packagelist']['name']]);
 
@@ -179,11 +170,9 @@ class PackagelistController extends Controller
                      $analysis->test_id = 0;
                      $analysis->user_id = 1;
                      $analysis->type_fee_id = 2;
-                     $analysis->sample_type_id = (int) $post['Packagelist']['sample_type_id'];
                      $analysis->testcategory_id = 0;
                      $analysis->is_package = 1;
                      $analysis->method = "-";
-                     $analysis->category_id = 1;
                      $analysis->fee = $r;
                      $analysis->testname = $modelpackage->name;
                      $analysis->references = "-";
@@ -211,13 +200,10 @@ class PackagelistController extends Controller
                         $analysis_package->test_id = $t_id;
                         $analysis_package->user_id = 1;
                         $analysis_package->type_fee_id = 2;
-                        $analysis_package->sample_type_id = (int) $post['Packagelist']['sample_type_id'];
-                        $analysis_package->category_id = 1;
                         $analysis_package->testcategory_id = $methodreference->method_reference_id;
                         $analysis_package->is_package = 1;
                         $analysis_package->method = $methodreference->method;
                        // $analysis->method = $modelmethod->method;
-                        $analysis->category_id = 1;
                         $analysis_package->fee = 0;
                         $analysis_package->testname = $modeltest->testName;
                         $analysis_package->references = $methodreference->reference;
@@ -249,20 +235,24 @@ class PackagelistController extends Controller
                 'model' => $model,
                 'searchModel' => $searchModel,
                 'dataProvider' => $dataProvider,
+                'request_id'=>$request_id,
                 'sampleDataProvider' => $sampleDataProvider,
                 'testcategory' => $testcategory,
                 'test' => $test,
+                'labId'=>$labId,
                 'sampletype'=>$sampletype
             ]);
         }else{
             $model->rstl_id = $GLOBALS['rstl_id'];
             return $this->render('_packageform', [
                 'model' => $model,
+                'request_id'=>$request_id,
                 'searchModel' => $searchModel,
                 'dataProvider' => $dataProvider,
                 'sampleDataProvider' => $sampleDataProvider,
                 'testcategory' => $testcategory,
                 'test' => $test,
+                'labId'=>$labId,
                 'sampletype'=>$sampletype
             ]);
         }
@@ -307,56 +297,26 @@ class PackagelistController extends Controller
         }
     }
 
+    /**
+     * @return string
+     */
     public function actionGetpackage() {
-
 
     if ($_GET['packagelist_id']){
         if(isset($_GET['packagelist_id'])){
             $id = (int) $_GET['packagelist_id'];
-            $modelpackagelist =  Package::findOne(['id'=>$id]);
+            $modelpackagelist =  Package::findOne($id);
             $tet = $modelpackagelist->tests;
 
-             
-                if(count($modelpackagelist)>0){
+                if($modelpackagelist){
                     $rate = number_format($modelpackagelist->rate,2);
-                             
-                    // $sql = "SELECT GROUP_CONCAT(testName) FROM tbl_testname WHERE testname_id IN ($tet)";     
-         
-                    // $Connection = Yii::$app->labdb;
-                    // $command = $Connection->createCommand($sql);
-                    // $row = $command->queryOne();    
-                    //     $tests = $row['GROUP_CONCAT(testName)'];   
-                    
-                    
-                  
-                        $sql = "SELECT GROUP_CONCAT(testname_id) FROM tbl_testname_method WHERE testname_method_id IN ($tet)";     
-             
-                        $Connection = Yii::$app->labdb;
-                        $command = $Connection->createCommand($sql);
-                        $row = $command->queryOne();    
-                        $tests = $row['GROUP_CONCAT(testname_id)'];  
+                    $space = explode(',', $tet);
 
-                        $space = explode(',', $tests);
-                        $d = '';
-                        $newline = ", ";
-                        foreach ($space as $s){
-                            $d.= $s.$newline;
+                    $tests = "";
+                    $testsNameMethods = Testnamemethod::find()->where(['in', 'testname_method_id',$space])->all();
+                        foreach($testsNameMethods as $method){
+                            $tests = $tests." ".$method->testname->testName;
                         }
-
-                        $len = strlen($d);
-
-                        $x = $len-2;
-
-                        $testname_id = substr($d ,0,$x);
-                        $sql_testname = "SELECT GROUP_CONCAT(testName) FROM tbl_testname WHERE testname_id IN ($testname_id)";     
-             
-                        $Connection = Yii::$app->labdb;
-                        $command_testname = $Connection->createCommand($sql_testname);
-                        $row_testname = $command_testname->queryOne();    
-                        $tests = $row_testname['GROUP_CONCAT(testName)'];  
-
-                      
-                 
 
                 } else {
                     $rate = "";

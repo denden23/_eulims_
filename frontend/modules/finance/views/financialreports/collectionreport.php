@@ -38,84 +38,138 @@ $this->params['breadcrumbs'][] = $moduleTitle;
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
          'panel'=>['type'=>'primary', 'heading'=>$moduleTitle],
+        
+//        'beforeHeader'=>
+//        [
+//                    [
+//                        'columns'=>[
+//                            ['content'=>'Official', 'options'=>['colspan'=>2, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'', 'options'=>['colspan'=>4, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'Amount', 'options'=>['colspan'=>4, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                        ],
+//                        'options'=>['class'=>'skip-export'] // remove this row from export
+//                    ],
+//                    [
+//                        'columns'=>[
+//                            ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                           //  ['content'=>'', 'options'=>['colspan'=>3, 'class'=>'text-center warning','style'=>'background-color:blue;']], 
+//                            ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']],
+//                             ['content'=>'', 'options'=>['colspan'=>1, 'class'=>'text-center warning','style'=>'background-color:blue;']],
+//                            ['content'=>'Breakdown of Collections', 'options'=>['colspan'=>3, 'class'=>'text-center warning','style'=>'background-color:blue;']],
+//
+//                        ],
+//                        'options'=>['class'=>'skip-export'] // remove this row from export
+//                    ]
+//        ],
        // 'filterModel' => $searchModel,
             'columns' => [
                   //  ['class'=>'kartik\grid\SerialColumn'],
-                        [
-                        'attribute' => 'betweenOR',
-                        'header' => 'Receipt Date',
-                        'group' => true, // enable grouping
-                        'groupedRow'=>true,                    // move grouped column to a single grouped row
-                        'groupOddCssClass'=>'kv-grouped-row',  // configure odd group cell css class
-                        'groupEvenCssClass'=>'kv-grouped-row', // configure even group cell css class
-                      // 'header'=>'OR Series :',
-                        'groupFooter'=>function ($model, $key, $index, $widget) { // Closure method
-                            return [
-                                    'mergeColumns'=>[[1,3]], // columns to merge in summary
-                                    'content'=>[             // content to show in each summary cell
-                                        4=>'Deposits : ',
-                                        5=>GridView::F_SUM,
-                                        6=>GridView::F_SUM,
-                                        
-                                    ],
-                                    'contentFormats'=>[      // content reformatting for each summary cell
-                                        5=>['format'=>'number', 'decimals'=>2],
-                                        6=>['format'=>'number', 'decimals'=>2],
-                                       
-                                    ],
-                                    'contentOptions'=>[      // content html attributes for each summary cell
-                                       // 1=>['style'=>'font-variant:small-caps'],
-                                        4=>['style'=>'text-align:right'],
-                                        5=>['style'=>'text-align:right'],
-                                        6=>['style'=>'text-align:right'],
-                                    ],
-                                    // html attributes for group summary row
-                                    'options'=>['class'=>'danger','style'=>'font-weight:bold;']
-                                ];
-                            }
-                        ],
+                        
                         [
                         'attribute' => 'receiptDate',
-                        'header' => 'Receipt Date',
+                        'header' => 'Date',
 
                         ],
 
                         [
                             'attribute' =>  'or_number',
-                            'header' => 'Receipt Number',
+                            'header' => 'Number',
                             'subGroupOf'=>0
                         ],
+                         [
+                             'attribute'=>'blankrow', 
+                            'header' => 'Responsibility Center Code',
+                          
+                        ],
+                
+                                
                        [
                         'attribute' => 'payor',
                         'header' => 'Payor',
+                         'width'=>'100px',
 
                         ],
                          [
-                        'attribute' => 'nature',
-                        'header' => 'Collection Type',
+                        'attribute' => 'particular',
+                        'header' => 'Particulars',
 
                         ],
+                  [
+                           
+                            'header' => 'MFO/PAP',
+                          'attribute'=>'blankrow', 
+                        ],
                          [
-                        'attribute' => 'btrAmount',
-                        'header' => 'Collection BTR',
+                        'attribute' => 'btramount',
+                        'header' => 'Total per OR ',
                         'contentOptions'=>['style'=>'text-align:right'],
-
+                        'format' => ['decimal', 2],
+                        ],
+                
+                [
+                        'attribute' => 'total',
+                        'header' => 'Bureau of Treasury',
+                      //  'width'=>'5px',
+                        'contentOptions'=>['style'=>'vertical-align: bottom;'],
+                         'format' => ['decimal', 2],
+                        'group' => true, // enable grouping
+                       // 'groupedRow'=>true,                    // move grouped column to a single grouped row
+                      //  'groupOddCssClass'=>'kv-grouped-row',  // configure odd group cell css class
+                     //   'groupEvenCssClass'=>'kv-grouped-row', // configure even group cell css class
+                      // 'header'=>'OR Series :',
+//                        'groupFooter'=>function ($model, $key, $index, $widget) { // Closure method
+//                            return [
+//                                    'mergeColumns'=>[[1,3]], // columns to merge in summary
+//                                    'content'=>[             // content to show in each summary cell
+//                                        4=>'Deposits : ',
+//                                        5=>GridView::F_SUM,
+//                                        6=>GridView::F_SUM,
+//                                        
+//                                    ],
+//                                    'contentFormats'=>[      // content reformatting for each summary cell
+//                                        5=>['format'=>'number', 'decimals'=>2],
+//                                        6=>['format'=>'number', 'decimals'=>2],
+//                                       
+//                                    ],
+//                                    'contentOptions'=>[      // content html attributes for each summary cell
+//                                       // 1=>['style'=>'font-variant:small-caps'],
+//                                        4=>['style'=>'text-align:right'],
+//                                        5=>['style'=>'text-align:right'],
+//                                        6=>['style'=>'text-align:right'],
+//                                    ],
+//                                    // html attributes for group summary row
+//                                    'options'=>['class'=>'danger','style'=>'font-weight:bold;']
+//                                ];
+//                            }
                         ],
 
                         [
                         'attribute' => 'prjAmount',
-                        'header' => 'Collection Project',
+                        'header' => 'Trust Fund',
                         'contentOptions'=>['style'=>'text-align:right'],
+                        
+                        'format' => ['decimal', 2],
+                       
+                        ],
+                
+                        [
+                        'value' => 'deposit_id',
+                        'header' => 'Deposit ID',
+                        'contentOptions'=>['style'=>'display:none'],
                         ],
                         
-                        [
-                        'attribute' => 'pmode',
-                        'header' => 'Payment Mode',
-                        ],
-                        [
-                        'attribute' => 'checknumber',
-                        'header' => 'Check No.',
-                        ],
+//                        [
+//                        'attribute' => 'pmode',
+//                        'header' => 'Payment Mode',
+//                        ],
+//                        [
+//                        'attribute' => 'checknumber',
+//                        'header' => 'Check No.',
+//                        ],
 
 
                         

@@ -13,8 +13,8 @@ return [
             'transport' => [
                 'class' => 'Swift_SmtpTransport',
                 'host' => 'smtp.gmail.com',
-                'username' => 'eulims.onelab@gmail.com',
-                'password' => 'eulim$0nelab',
+                'username' => 'dost9ict@gmail.com',
+                'password' => 'efsepgobqhceacai',
                 'port' => '587',
                 'encryption' => 'tls',
                 'streamOptions'=>[

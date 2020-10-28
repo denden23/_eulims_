@@ -1,3 +1,7 @@
+<?php
+use yii\helpers\Html;
+
+?>
 <!DOCTYPE html>
 <html>
 
@@ -12,6 +16,16 @@
       7px 7px 0px rgba(0, 0, 0, 0.2);text-align:center;"><b>&nbsp;&nbsp;&nbsp;&nbsp;Customer Satisfaction Index</b></h1><br>
 
 
+<div class="row" style="float: right;padding-right: 300px">
+      
+<?php 
+// echo Html::button("<span class='glyphicon glyphicon-print'></span> Customer Satisfaction Measurement Report",['value' => '/lab/csf/printreport','onclick'=>'location.href=this.value', 'class' => 'btn btn-primary', 'title' => Yii::t('app', "View Request")]);
+// echo "&nbsp;&nbsp;&nbsp;&nbsp;";
+// echo Html::button("<span class='glyphicon glyphicon-print'></span> Customer Satisfaction Feedback",['value' => '/lab/csf/printmonthly','onclick'=>'location.href=this.value', 'class' => 'btn btn-primary', 'title' => Yii::t('app', "View Request")]);
+// echo "<br><br>";
+?>
+
+</div>
 
 <!DOCTYPE html>
 <html>
@@ -93,11 +107,11 @@
                 <tbody>
                   <tr>
                     <td>For the period of</td>
-                    <td>: <strong>Jan 2019</strong></td>
+                    <td>: <strong><?php echo $monthName;?></strong></td>
                   </tr>
                   <tr>
                     <td>Total no. of Respondents</td>
-                    <td>: <strong id="respondents">32</strong></td>
+                    <td>: <strong id="respondents"><?php  echo $count?></strong></td>
                   </tr>
                 </tbody>
               </table>
@@ -252,198 +266,14 @@
     <script>
       $(document).ready(function() {
         // ECHO DATA AS respondents VALUE
-        let respondents = [
-          {
-            id: 1,
-            name: "Coca-Cola Beverages Philippines, Inc.",
-            ref_num: "R9-102019-MIC-0821",
-            nob: "Beverage and Juices",
-            tom: 1,
-            service: 2,
-            d_deliverytime: 5,
-            d_accuracy: 5,
-            d_speed: 5,
-            d_cost: 5,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 5,
-            i_cost: 5,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "10/22/2019 14:29"
-          },
-          {
-            id: 2,
-            name: "Suzette daniel",
-            ref_num: "R9-102019-MET-0342",
-            nob: "Petroleum Products / Haulers",
-            tom: 1,
-            service: 3,
-            d_deliverytime: 3,
-            d_accuracy: 4,
-            d_speed: 3,
-            d_cost: 5,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 3,
-            i_accuracy: 4,
-            i_speed: 5,
-            i_cost: 5,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "10/23/2019 13:47"
-          },
-          {
-            id: 3,
-            name: "Noel",
-            ref_num: "",
-            nob: "",
-            tom: "",
-            service: "",
-            d_deliverytime: 5,
-            d_accuracy: 5,
-            d_speed: 5,
-            d_cost: 5,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 5,
-            i_cost: 5,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "11/11/2019 12:42"
-          },
-          {
-            id: 4,
-            name: "Green Grass Food Service",
-            ref_num: "R9-112019-MIC-0878",
-            nob: "Others",
-            tom: 1,
-            service: 2,
-            d_deliverytime: 4,
-            d_accuracy: 4,
-            d_speed: 2,
-            d_cost: 3,
-            d_attitude: 5,
-            d_overall: 4,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 4,
-            i_cost: 4,
-            i_attitude: 5,
-            i_overall: 4,
-            recommend: 8,
-            essay: "",
-            r_date: "11/12/2019 14:58"
-          },
-          {
-            id: 5,
-            name: "Permex Producer and exporter Corporations",
-            ref_num: "",
-            nob: "",
-            tom: 1,
-            service: 1,
-            d_deliverytime: 4,
-            d_accuracy: 5,
-            d_speed: 4,
-            d_cost: 4,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 4,
-            i_cost: 4,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "11/13/2019 10:31"
-          },
-          {
-            id: 6,
-            name: "Bueno Pizza House Corporation",
-            ref_num: "R9-112019-CHE-0815",
-            nob: "Raw and Processed Food",
-            tom: 1,
-            service: 1,
-            d_deliverytime: 5,
-            d_accuracy: 5,
-            d_speed: 5,
-            d_cost: 5,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 5,
-            i_cost: 5,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "11/14/2019 15:44"
-          },
-          {
-            id: 7,
-            name: "PHILGEN CITY MALL",
-            ref_num: "R9-102019-CHE-0806",
-            nob: "Others",
-            tom: "",
-            service: "",
-            d_deliverytime: 5,
-            d_accuracy: 5,
-            d_speed: 5,
-            d_cost: 5,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 5,
-            i_cost: 5,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "11/14/2019 15:46"
-          },
-          {
-            id: 11,
-            name: "Tandem cedar cypress Corp.",
-            ref_num: "R9-112019-0769",
-            nob: "Others",
-            tom: 1,
-            service: 1,
-            d_deliverytime: 5,
-            d_accuracy: 5,
-            d_speed: 5,
-            d_cost: 5,
-            d_attitude: 5,
-            d_overall: 5,
-            i_deliverytime: 5,
-            i_accuracy: 5,
-            i_speed: 5,
-            i_cost: 5,
-            i_attitude: 5,
-            i_overall: 5,
-            recommend: 10,
-            essay: "",
-            r_date: "11/15/2019 14:32"
-          }
-        ];
-
+        let respondents = [];
         let part1 = {};
         let part2 = {};
         let part2_totalIS = 0;
+        let part2_totalIS2 = 0;
         let part2_totalWF = 0;
         let part2_totalWS = 0;
+        let newtotal=0;
         let items = {
           deliverytime: "Delivery Time",
           accuracy: "Correctness and Accuracy of Results",
@@ -458,133 +288,198 @@
           promoters: 0
         };
 
-        respondents.forEach(respondent => {
-          Object.keys(respondent).forEach(key => {
-            if (key.startsWith("d_")) {
-              if (!part1[key]) part1[key] = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-              part1[key][respondent[key]] += 1;
-            }
+        $.get('/lab/csf/csf?csfmonth=' + <?php echo $pMonth?> , function (data) {
+          respondents = data[0]
+         
 
-            if (key.startsWith("i_")) {
-              if (!part2[key]) part2[key] = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-              part2[key][respondent[key]] += 1;
-            }
+          respondents.forEach(respondent => {
+            Object.keys(respondent).forEach(key => {
+              if (key.startsWith("d_")) {
+                if (!part1[key]) part1[key] = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+                part1[key][respondent[key]] += 1;
+              }
 
-            if (key === "recommend") {
-              if (respondent[key] <= 6) satMeasurement.detractors += 1;
-              if (respondent[key] >= 7 && respondent[key] <= 8)
-                satMeasurement.passives += 1;
-              if (respondent[key] >= 9) satMeasurement.promoters += 1;
-            }
+              if (key.startsWith("i_")) {
+                if (!part2[key]) part2[key] = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+                part2[key][respondent[key]] += 1;
+              }
+
+              if (key === "recommend") {
+                if (respondent[key] <= 6) satMeasurement.detractors += 1;
+                if (respondent[key] >= 7 && respondent[key] <= 8)
+                  satMeasurement.passives += 1;
+                if (respondent[key] >= 9) satMeasurement.promoters += 1;
+              }
+            });
           });
-        });
+          
+       //   --------------------------------------
+          
+           Object.keys(items).forEach(key => {
+            let part1_totalScore =
+              part1["d_" + key][5] * 5 +
+              part1["d_" + key][4] * 4 +
+              part1["d_" + key][3] * 3 +
+              part1["d_" + key][2] * 2 +
+              part1["d_" + key][1] * 1;
+          
 
-        Object.keys(items).forEach(key => {
-          let part1_totalScore =
-            part1["d_" + key][5] * 5 +
-            part1["d_" + key][4] * 4 +
-            part1["d_" + key][3] * 3 +
-            part1["d_" + key][2] * 2 +
-            part1["d_" + key][1] * 1;
-          let part1_ss = parseFloat(
-            Math.round((part1_totalScore / respondents.length) * 100) / 100
-          ).toFixed(2);
+            let part2_totalScore =
+              part2["i_" + key][5] * 5 +
+              part2["i_" + key][4] * 4 +
+              part2["i_" + key][3] * 3 +
+              part2["i_" + key][2] * 2 +
+              part2["i_" + key][1] * 1;
+     
+            let part2_is = parseFloat(
+              Math.round((part2_totalScore / respondents.length) * 100) / 100
+            ).toFixed(2);
+           
+           // console.log(part2_totalIS2) + 'test';
 
-          let part2_totalScore =
-            part2["i_" + key][5] * 5 +
-            part2["i_" + key][4] * 4 +
-            part2["i_" + key][3] * 3 +
-            part2["i_" + key][2] * 2 +
-            part2["i_" + key][1] * 1;
-          let part2_is = parseFloat(
-            Math.round((part2_totalScore / respondents.length) * 100) / 100
-          ).toFixed(2);
-          let part2_wf = parseFloat(
-            Math.round((part2_is / part2_totalScore) * 100 * 100) / 100
-          ).toFixed(2);
-          let part2_ws = parseFloat(
-            Math.round(((part1_ss * part2_wf) / 100) * 100) / 100
-          ).toFixed(2);
+          
+        if (key !== "overall") {
+              part2_totalIS2 += Number(part2_is);
+            console.log(part2_totalIS2)
+            }
+            
+         
+            
+           let newtotal = part2_totalIS;
+           
+          });
+          
+       //   ---------------------------------------
+           
+         
+console.log(part2_totalIS2);
 
-          let part1_gap = parseFloat(
-            Math.round((part2_is - part1_ss) * 100) / 100
-          ).toFixed(2);
+          Object.keys(items).forEach(key => {
+            let part1_totalScore =
+              part1["d_" + key][5] * 5 +
+              part1["d_" + key][4] * 4 +
+              part1["d_" + key][3] * 3 +
+              part1["d_" + key][2] * 2 +
+              part1["d_" + key][1] * 1;
+            let part1_ss = parseFloat(
+             (part1_totalScore / respondents.length) * 100 / 100
+            ).toFixed(2);
+
+            let part2_totalScore =
+              part2["i_" + key][5] * 5 +
+              part2["i_" + key][4] * 4 +
+              part2["i_" + key][3] * 3 +
+              part2["i_" + key][2] * 2 +
+              part2["i_" + key][1] * 1;
+     
+            let part2_is = parseFloat(
+              (part2_totalScore / respondents.length) * 100 / 100
+            ).toFixed(2);
+            let part2_wf = parseFloat(
+              (part2_is/part2_totalIS2) * 100 ).toFixed(2);
+            let part2_ws = parseFloat(
+              ((part1_ss * part2_wf) / 100) * 100 / 100
+            ).toFixed(2);
+
+            let part1_gap = parseFloat(
+             (part2_is - part1_ss) * 100 / 100
+            ).toFixed(2);
+
+            
+
+            if (key !== "overall") {
+              $(`
+                <tr>
+                  <td>${items[key]}</td>
+                  <td>${part2["i_" + key][5]}</td>
+                  <td class="active">${part2["i_" + key][5] * 5}</td>
+                  <td>${part2["i_" + key][4]}</td>
+                  <td class="active">${part2["i_" + key][4] * 4}</td>
+                  <td>${part2["i_" + key][3]}</td>
+                  <td class="active">${part2["i_" + key][3] * 3}</td>
+                  <td>${part2["i_" + key][2]}</td>
+                  <td class="active">${part2["i_" + key][2] * 2}</td>
+                  <td>${part2["i_" + key][1]}</td>
+                  <td class="active">${part2["i_" + key][1] * 1}</td>
+                  <td>${part2_totalScore}</td>
+                  <td>${part2_is}</td>
+                  <td>${part2_wf}</td>
+                  <td>${part1_ss}</td>
+                  <td>${part2_ws}</td>
+               
+                </tr>
+              `).appendTo("#part-2");
+
+              part2_totalIS += Number(part2_is);
+              part2_totalWF += Number(part2_wf);
+              part2_totalWS += Number(part2_ws);
+            }
+            
+             
+            
+            $(`
+            <tr>
+              <td>${items[key]}</td>
+              <td>${part1["d_" + key][5]}</td>
+              <td class="active">${part1["d_" + key][5] * 5}</td>
+              <td>${part1["d_" + key][4]}</td>
+              <td class="active">${part1["d_" + key][4] * 4}</td>
+              <td>${part1["d_" + key][3]}</td>
+              <td class="active">${part1["d_" + key][3] * 3}</td>
+              <td>${part1["d_" + key][2]}</td>
+              <td class="active">${part1["d_" + key][2] * 2}</td>
+              <td>${part1["d_" + key][1]}</td>
+              <td class="active">${part1["d_" + key][1] * 1}</td>
+              <td>${part1_totalScore}</td>
+              <td>${part1_ss}</td>
+              <td>${part1_gap}</td>
+            </tr>
+          `).appendTo("#part-1");
+            
+            
+          });
+          
+          
 
           $(`
-					<tr>
-						<td>${items[key]}</td>
-						<td>${part1["d_" + key][5]}</td>
-						<td class="active">${part1["d_" + key][5] * 5}</td>
-						<td>${part1["d_" + key][4]}</td>
-						<td class="active">${part1["d_" + key][4] * 4}</td>
-						<td>${part1["d_" + key][3]}</td>
-						<td class="active">${part1["d_" + key][3] * 3}</td>
-						<td>${part1["d_" + key][2]}</td>
-						<td class="active">${part1["d_" + key][2] * 2}</td>
-						<td>${part1["d_" + key][1]}</td>
-						<td class="active">${part1["d_" + key][1] * 1}</td>
-						<td>${part1_totalScore}</td>
-						<td>${part1_ss}</td>
-						<td>${part1_gap}</td>
-					</tr>
-				`).appendTo("#part-1");
+          <tr>
+            <td colspan="12"></td>
+            <td>${part2_totalIS}</td>
+            <td>${parseFloat(
+                part2_totalWF * 100 / 100
+              ).toFixed(2)}</td>
+            <td></td>
+            <td>${part2_totalWS.toFixed(2)}</td>
+          </tr>
+          <tr class="bg-warning">
+            <td colspan="12" class="text-right">
+              <strong>SATISFACTION INDEX:</strong>
+            </td>
+            <td colspan="3"></td>
+            <td>${parseFloat(
+                ((part2_totalWS / 5) * 100) * 100 / 100
+              ).toFixed(2)}</td>
+          </tr>
+        `).appendTo("#part-2");
 
-          if (key !== "overall") {
-            $(`
-							<tr>
-								<td>${items[key]}</td>
-								<td>${part2["i_" + key][5]}</td>
-								<td class="active">${part2["i_" + key][5] * 5}</td>
-								<td>${part2["i_" + key][4]}</td>
-								<td class="active">${part2["i_" + key][4] * 4}</td>
-								<td>${part2["i_" + key][3]}</td>
-								<td class="active">${part2["i_" + key][3] * 3}</td>
-								<td>${part2["i_" + key][2]}</td>
-								<td class="active">${part2["i_" + key][2] * 2}</td>
-								<td>${part2["i_" + key][1]}</td>
-								<td class="active">${part2["i_" + key][1] * 1}</td>
-								<td>${part2_totalScore}</td>
-								<td>${part2_is}</td>
-								<td>${part2_wf}</td>
-								<td>${part1_ss}</td>
-								<td>${part2_ws}</td>
-							</tr>
-						`).appendTo("#part-2");
-
-            part2_totalIS += Number(part2_is);
-            part2_totalWF += Number(part2_wf);
-            part2_totalWS += Number(part2_ws);
-          }
-        });
-
-        $(`
-				<tr>
-					<td colspan="12"></td>
-					<td>${part2_totalIS}</td>
-					<td>${part2_totalWF}</td>
-					<td></td>
-					<td>${part2_totalWS.toFixed(2)}</td>
-				</tr>
-				<tr class="bg-warning">
-					<td colspan="12" class="text-right">
-						<strong>SATISFACTION INDEX:</strong>
-					</td>
-					<td colspan="3"></td>
-					<td>${(part2_totalWS / 5) * 100}</td>
-				</tr>
-			`).appendTo("#part-2");
-
-        $(`
-				<tr>
-					<td>${satMeasurement.detractors}</td>
-					<td>${satMeasurement.passives}</td>
-					<td>${satMeasurement.promoters}</td>
-					<td>${(satMeasurement.promoters * 100) / respondents.length -
-            (satMeasurement.detractors * 100) / respondents.length}</td>
-				</tr>
-			`).appendTo("#satisfaction-measurement");
+          $(`
+          <tr>
+            <td>${satMeasurement.detractors}</td>
+            <td>${satMeasurement.passives}</td>
+            <td>${satMeasurement.promoters}</td>
+            <td>${
+              parseFloat(
+                Math.round(((satMeasurement.promoters * 100) / respondents.length -
+              (satMeasurement.detractors * 100) / respondents.length) * 100) / 100
+              ).toFixed(2)}</td>
+          </tr>
+        `).appendTo("#satisfaction-measurement");
+        })
       });
     </script>
     <!-- TO HERE -->
-  </body>
+  
+
+
+</body>
 </html>

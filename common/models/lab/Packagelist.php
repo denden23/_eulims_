@@ -42,7 +42,7 @@ class Packagelist extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['rstl_id', 'lab_id', 'testcategory_id', 'sample_type_id', 'name', 'tests'], 'required'],
+            [['rstl_id', 'lab_id', 'sample_type_id', 'name', 'tests'], 'required'],
             [['rstl_id', 'lab_id', 'testcategory_id', 'sample_type_id'], 'integer'],
             [['rate'], 'string'],
             [['name'], 'string', 'max' => 50],

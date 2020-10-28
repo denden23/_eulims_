@@ -68,6 +68,7 @@ $js=<<<SCRIPT
         var AnalysisRows=$analysisdataprovider->count;
         var msg='';
         if(SampleRows>0 && AnalysisRows>0){
+            this.disabled = true;
             $.post('/lab/request/saverequestransaction', {
                 request_id: $model->request_id,
                 lab_id: $model->lab_id,
@@ -121,8 +122,16 @@ if($Cancelledrequest){
 if($Request_Ref){//With Reference
     $enableRequest=true;
     $disableButton="disabled";///reports/preview?url=/lab/request/print-request?id=10
-    $EnablePrint="<a href='/reports/preview?url=/lab/request/print-request?id=".$model->request_id."' class='btn btn-primary' style='margin-left: 5px'><i class='fa fa-print'></i> Print Request</a>";
-    $ClickButton='';
+    $EnablePrint="<a href='/lab/request/print-request?id=".$model->request_id."' class='btn btn-primary' style='margin-left: 5px'><i class='fa fa-print'></i> Print Request</a>";
+    $ClickButton=''; //temporary , only lab manager
+   
+    //get the roles
+    $roles = \Yii::$app->authManager->getRolesByUser(\Yii::$app->user->id);
+    foreach ($roles as $role) {
+
+        if(($role->name == "pro-CRO") ||($role->name == "pro-MANAGER"))
+             $ClickButton='addSample(this.value,this.title)';
+    }
     $btnID="";
 }else{ // NO reference number yet
     $enableRequest=false;
@@ -227,7 +236,7 @@ $this->registerJs($PrintEvent);
                         [
                             'label'=>'Address',
                             'format'=>'raw',
-                            'value'=>$model->customer ? $model->customer->address : "",
+                            'value'=>$model->customer ? $model->customer->completeaddress : "",
                             'valueColOptions'=>['style'=>'width:30%'], 
                             'displayOnly'=>true
                         ],
@@ -335,17 +344,18 @@ $this->registerJs($PrintEvent);
                 ],
                 [
                     'columns' => [
-                        // [
-                        //     'attribute'=>'receivedBy', 
-                        //     'format'=>'raw',
-                        //     'displayOnly'=>true,
-                        //     'valueColOptions'=>['style'=>'width:30%']
-                        // ],
+                      
                         [
                             'attribute'=>'contact_num',
                             'format'=>'raw',
-                            'valueColOptions'=>['style'=>'width:90%'], 
+                            'valueColOptions'=>['style'=>'width:30%'], 
                             'displayOnly'=>true
+                        ],
+                        [
+                            'attribute'=>'created_at', 
+                            'format'=>'raw',
+                            'displayOnly'=>true,
+                            'valueColOptions'=>['style'=>'width:30%']
                         ],
                     ],
                     
@@ -376,6 +386,18 @@ $this->registerJs($PrintEvent);
                     'enableSorting' => false,
 					'value' => function($data){
                         return ($data->request->lab_id == 2) ? "Sampling Date: <span style='color:#000077;'><b>".date("Y-m-d h:i A",strtotime($data->sampling_date))."</b></span>,&nbsp;".$data->description : $data->description;
+                    },
+                   'contentOptions' => [
+                        'style'=>'max-width:180px; overflow: auto; white-space: normal; word-wrap: break-word;'
+                    ],
+                ],
+				[
+                    'attribute'=>'customer_description',
+					'header'=>'Description provided by Customer',
+                    'format' => 'raw',
+                    'enableSorting' => false,
+					'value' => function($data){
+                        return empty($data->customer_description) ? "<span style='color:#444444;font-size:11px;'><i>No information provided</i></span>" : $data->customer_description;
                     },
                    'contentOptions' => [
                         'style'=>'max-width:180px; overflow: auto; white-space: normal; word-wrap: break-word;'
@@ -438,7 +460,7 @@ $this->registerJs($PrintEvent);
                 'panel' => [
                     'heading'=>'<h3 class="panel-title">Samples</h3>',
                     'type'=>'primary',
-                    'before'=>Html::button('<i class="glyphicon glyphicon-plus"></i> Add Sample', ['disabled'=>$enableRequest, 'value' => Url::to(['sample/create','request_id'=>$model->request_id]),'title'=>'Add Sample', 'onclick'=>'addSample(this.value,this.title)', 'class' => 'btn btn-success','id' => 'modalBtn'])." ".Html::button('<i class="glyphicon glyphicon-print"></i> Print Label', ['disabled'=>!$enableRequest, 'onclick'=>"window.location.href = '" . \Yii::$app->urlManager->createUrl(['/reports/preview?url=/lab/request/printlabel','request_id'=>$model->request_id]) . "';" ,'title'=>'Print Label',  'class' => 'btn btn-success']),
+                    'before'=>Html::button('<i class="glyphicon glyphicon-plus"></i> Add Sample', ['disabled'=>$enableRequest, 'value' => Url::to(['sample/create','request_id'=>$model->request_id]),'title'=>'Add Sample', 'onclick'=>'addSample(this.value,this.title)', 'class' => 'btn btn-success','id' => 'modalBtn'])." ".Html::button('<i class="glyphicon glyphicon-print"></i> Print Label', ['disabled'=>!$enableRequest, 'onclick'=>"window.location.href = '" . \Yii::$app->urlManager->createUrl(['/lab/request/printlabel','request_id'=>$model->request_id]) . "';" ,'title'=>'Print Label',  'class' => 'btn btn-success']),
                     'after'=>false,
                 ],
                 'columns' => $gridColumns,
@@ -463,7 +485,7 @@ $this->registerJs($PrintEvent);
             $enableRequest = false;
         }
 
-        if($model->discount > 0 || !empty($Request_Ref) || $samplecount == 0){
+        if( $samplecount == 0){
             $enablePackage = true;
         } else {
             $enablePackage = false;
@@ -523,8 +545,8 @@ $this->registerJs($PrintEvent);
                 ],
                 'hAlign' => 'right', 
                 'vAlign' => 'left',
-                'width' => '7%',
                 'format' => 'raw',
+                'width' => '7%',
                   'pageSummary'=> function (){
                         $url = \Yii::$app->request->url;
                         $id = substr($url, 21);
@@ -540,7 +562,7 @@ $this->registerJs($PrintEvent);
                         $sample_ids = substr($sample_ids, 0, strlen($sample_ids)-1);
                        
                         if ($samplesquery){
-                            $sql = "SELECT SUM(fee) as subtotal FROM tbl_analysis WHERE sample_id IN ($sample_ids)";     
+                            $sql = "SELECT SUM(fee) as subtotal FROM tbl_analysis WHERE sample_id IN ($sample_ids) AND cancelled = 0";     
                             
                                  $Connection = Yii::$app->labdb;
                                  $command = $Connection->createCommand($sql);
@@ -549,11 +571,11 @@ $this->registerJs($PrintEvent);
                                  $discounted = ($subtotal * ($rate/100));
                                  $total = $subtotal - $discounted;
                                 
-                                 if ($total <= 0){
-                                     return  '<div id="subtotal">₱'.number_format($subtotal, 2).'</div><div id="discount">₱0.00</div><div id="total"><b>₱'.number_format($total, 2).'</b></div>';
-                                 }else{
+                                 // if ($total <= 0){
+                                 //     return  '<div id="subtotal">₱'.number_format($subtotal, 2).'</div><div id="discount">₱0.00</div><div id="total"><b>₱'.number_format($total, 2).'</b></div>';
+                                 // }else{
                                      return  '<div id="subtotal">₱'.number_format($subtotal, 2).'</div><div id="discount">₱'.number_format($discounted, 2).'</div><div id="total"><b>₱'.number_format($total, 2).'</b></div>';
-                                 }
+                                 // }
                         }else{
                             return '';
                         }     
@@ -583,6 +605,10 @@ $this->registerJs($PrintEvent);
                 //   }else{
                 //    return Html::button('<span"><b>PENDING</span>', ['value'=>Url::to(['/lab/tagging/status','id'=>$model->analysis_id]),'onclick'=>'LoadModal(this.title, this.value, true, 600);', 'class' => 'btn btn-default','title' => Yii::t('app', "Analysis Status")]);
                 // }
+
+                if($model->cancelled){
+                     return "<span class='badge btn-danger' style='width:90px;height:20px'>CANCELLED</span>";
+                }
 
                 $tagging = Tagging::findOne(['analysis_id' => $model->analysis_id]); 
                 if ($tagging){
@@ -627,7 +653,7 @@ $this->registerJs($PrintEvent);
                 'id' => 'analysis-grid',
                 'responsive'=>true,
                 'dataProvider'=> $analysisdataprovider,
-                'pjax'=>true,
+                'pjax'=>false,
                 'pjaxSettings' => [
                     'options' => [
                         'enablePushState' => false,
@@ -643,8 +669,7 @@ $this->registerJs($PrintEvent);
                     'heading'=>'<h3 class="panel-title">Analysis</h3>',
                     'type'=>'primary',
                     'before'=>Html::button('<i class="glyphicon glyphicon-plus"></i> Add Analysis', ['disabled'=>$enableRequest,'value' => Url::to(['analysis/create','id'=>$model->request_id]),'title'=>'Add Analyses', 'onclick'=> $ClickButton, 'class' => 'btn btn-success','id' => 'btn_add_analysis'])."   ".
-                    Html::button('<i class="glyphicon glyphicon-plus"></i> Add Package', ['disabled'=>$enablePackage,'value' => $model->discount > 0 ? '' : Url::to(['/services/packagelist/createpackage','id'=>$model->request_id]),'title'=>'Add Package', 'onclick'=>$model->discount > 0 ? '' : $ClickButton, 'class' => 'btn btn-success','id' => 'btn_add_package'])." ".
-                    Html::button('<i class="glyphicon glyphicon-plus"></i> Additional Fees', ['disabled'=>$enableRequest,'value' => Url::to(['/lab/fee/create','id'=>$model->request_id]),'title'=>'Add Additional Fees', 'onclick'=>$ClickButton, 'class' => 'btn btn-success','id' => 'btn_add_fees']),
+                    Html::button('<i class="glyphicon glyphicon-plus"></i> Add Package', ['disabled'=>$enablePackage,'value' => Url::to(['/services/packagelist/createpackage','id'=>$model->request_id]),'title'=>'Add Package', 'onclick'=> $ClickButton, 'class' => 'btn btn-success','id' => 'btn_add_package'])." ",
                    'after'=>false,
                    'footer'=>"<div class='row' style='margin-left: 2px;padding-top: 5px'><button ".$disableButton." value='/lab/request/saverequestransaction' ".$btnID." class='btn btn-success'><i class='fa fa-save'></i> Save Request</button>".$EnablePrint."</div>",
                 ],

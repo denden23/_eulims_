@@ -73,7 +73,7 @@ $this->params['breadcrumbs'][] = $this->title;
                ],
                'filterInputOptions' => ['placeholder' => 'Test Name', 'testcategory_id' => 'grid-products-search-category_type_id']
             ],
-            'added_by',
+            //'added_by',
 
             ['class' => 'kartik\grid\ActionColumn',
             'contentOptions' => ['style' => 'width: 8.7%'],

@@ -83,7 +83,34 @@ $this->registerJs($js);
         'toolbar' => false,
         'columns' => [
             ['class' => '\kartik\grid\CheckboxColumn'],
-          
+            [     
+                'label' => 'Laboratory',
+                'format' => 'raw',
+                'contentOptions' => ['style' => 'width: 15%;word-wrap: break-word;white-space:pre-line;'],  
+                'value' => function($model) {
+                    $lab_query = Lab::find()->where(['lab_id'=>$model->lab_id])->one();
+        
+                    if ($lab_query){
+                        return $lab_query->labname;
+                    }else{
+                        return "";
+                    }
+                 }                        
+            ],
+            [     
+                'label' => 'Sample Type',
+                'format' => 'raw',
+                'contentOptions' => ['style' => 'width: 15%;word-wrap: break-word;white-space:pre-line;'],  
+                'value' => function($model) {
+                    $sampletype_query = Sampletype::find()->where(['sampletype_id'=>$model->sampletype_id])->one();
+        
+                    if ($sampletype_query){
+                        return $sampletype_query->type;
+                    }else{
+                        return "";
+                    }
+                 }                        
+            ],
             [     
                 'label' => 'Test Name',
                 'format' => 'raw',

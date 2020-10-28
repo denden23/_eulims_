@@ -70,8 +70,8 @@ $disable='';
                      'format' => 'yyyy-mm-dd',
                      'todayHighlight' => true,
                      'autoclose'=>true,
-                     'startDate' => date('Y-m-d'),
-                     'endDate' => date('Y-m-d')
+                  //   'startDate' => date('Y-m-d'),
+                   //  'endDate' => date('Y-m-d')
                      
                  ]
              ]);
@@ -218,6 +218,7 @@ $disable='';
     /*height: 2em;
     width: 2em;*/
     height: 64px;
+	
     width: 64px;
     overflow: show;
     margin: auto;

@@ -7,6 +7,19 @@ use common\models\system\Message;
 use yii\helpers\ArrayHelper;
 use common\components\Functions;
 
+//EGG
+use kartik\file\FileInput;
+use yii\widgets\ActiveForm;
+use common\models\message\Chat;
+use common\models\message\ChatGroup;
+use common\models\message\ChatSearch;
+use common\models\system\LoginForm;
+use linslin\yii2\curl;
+use yii\helpers\Json;
+use yii\data\ActiveDataProvider;
+$this->registerCssFile("/css/modcss/chat.css", [
+], 'css-chat'); //EGG
+
 /* @var $this \yii\web\View */
 /* @var $content string */
 $Request_URI=$_SERVER['REQUEST_URI'];
@@ -56,6 +69,69 @@ if($TotalMsg==0){
     $TotalMsg='';
 }
 $GLOBALS['rstl_id']= 11;
+
+
+
+//added the intro js and css
+$this->registerCssFile("/css/introjs.css", [
+], 'css-intro');
+
+
+$this->registerJsFile("/js/intro.js", [
+], 'js-intro');
+
+$session = Yii::$app->session;
+$source = 'https://eulims.onelab.dost.gov.ph/api/message/'; //API LINK
+$sourcetoken="";
+$flag="";
+$contacts="";
+$group="";
+if(isset($_SESSION['usertoken'])){
+	
+	$sourcetoken=$_SESSION['usertoken'];
+	$userid= Yii::$app->user->identity->profile->user_id;
+	//get profile
+	$authorization = "Authorization: Bearer ".$sourcetoken; 
+	$apiUrl=$source.'getuser';
+	$curl = new curl\Curl();
+	$curl->setOption(CURLOPT_HTTPHEADER, ['Content-Type: application/json' , $authorization]);
+	$curl->setOption(CURLOPT_SSL_VERIFYPEER, false);
+	$curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
+	$curl->setOption(CURLOPT_TIMEOUT, 180);
+	$list = $curl->get($apiUrl);
+	$decode=Json::decode($list);
+
+	//GROUPLIST
+	$groupUrl=$source.'getgroup?userid='.$userid;
+	$curlgroup = new curl\Curl();
+	$curlgroup->setOption(CURLOPT_HTTPHEADER, ['Content-Type: application/json' , $authorization]);
+	$curlgroup->setOption(CURLOPT_SSL_VERIFYPEER, false);
+	$curlgroup->setOption(CURLOPT_CONNECTTIMEOUT, 180);
+	$curlgroup->setOption(CURLOPT_TIMEOUT, 180);
+	$grouplist = $curlgroup->get($groupUrl);
+	$group=Json::decode($grouplist);
+
+	$chat = new Chat();
+	$searchModel = new ChatSearch();
+	$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+	
+	$contacts=$decode; 
+	$flag=1;
+	?>
+	<button class="open-button" onclick="openForm()"><i class="fa fa-commenting-o"></i></button>		
+    <?php
+}else{
+	$flag=0;
+	echo Html::button('<h5>Login</h5>', ['value'=>'/chat/info/login', 'class' => 'open-button','title' => Yii::t('app', "Login"),'id'=>'btnOP','onclick'=>'LoadModal(this.title, this.value);'])
+	?>
+	
+	 
+	<?php
+		//return $this->render('login', [
+		//'model' => $model
+		//]);
+	
+}	
 ?>
 
 <header class="main-header">
@@ -75,7 +151,8 @@ $GLOBALS['rstl_id']= 11;
                     <ul class="dropdown-menu">
                         <li class="header"><?= $TotalUnreadMessage ?></li>
                         <li>
-                            <!-- inner menu: contains the actual data -->
+                         
+						 <!-- inner menu: contains the actual data -->
                             <ul class="menu">
                                 <li><!-- start message -->
                                     <?php foreach($messages as $message){ ?>
@@ -94,7 +171,7 @@ $GLOBALS['rstl_id']= 11;
                             </ul>
                         </li>
                         <li class="footer">
-                            <a href="<?= Url::to($GLOBALS['frontend_base_uri'].'message/message/inbox') ?>">View all Messages</a>
+                            <!-- <a href="<?= Url::to($GLOBALS['frontend_base_uri'].'message/message/inbox') ?>">View all Messages</a> -->
                         </li>
                     </ul>
                 </li>
@@ -103,10 +180,18 @@ $GLOBALS['rstl_id']= 11;
 
                     <?php 
                         if (Yii::$app->user->isGuest){
-                            $imagename = "no-image.png";
+                            $imagename = "user.png";
                         }else{
                             $CurrentUser = User::findOne(['user_id'=> Yii::$app->user->identity->user_id]);
                             $imagename = $CurrentUser->profile->image_url;
+
+                              
+                            if ($imagename){
+                                //$imagename = $CurrentUser->profile->image_url;
+								$imagename="user.png";
+                            }else{
+                                $imagename = "user.png";
+                            }
                         }
                      ?>  
                  <?= Html::img("/uploads/user/photo/".$imagename, [ 
@@ -178,3 +263,383 @@ $GLOBALS['rstl_id']= 11;
         </div>
     </nav>
 </header>
+
+	<div class="chat-popup" id="myForm" name="myForm">
+		<form class="form-container" enctype="multipart/form-data">
+			<div class="chat-popup-header">
+				<!--<span>OneLab Chat</span>-->
+				<!--i class="fa fa-plus" id="plusgc"></i -->
+				<?php 
+				echo Html::button('<h5></h5>', ['value'=>'/chat/info/group', 'class' => 'fa fa-group','title' => Yii::t('app', "Group"),'id'=>'btnOP','onclick'=>'LoadModal(this.title, this.value);'])
+	            ?>
+				<i class="fa fa-gear"></i>
+				
+				<label id="profilenamepop"> &nbsp;</label>
+				<label id="chattype" hidden> &nbsp;</label> <!-- message(1) or file(2) -->
+				<label id="ctype" hidden> &nbsp;</label> <!-- personnal(1) or group(2) -->
+				<label id="dataid" hidden> &nbsp;</label> <!-- contact_id or group_id -->
+				<!--label id="recipientid" hidden> &nbsp;</label -->
+				<input type="text" id="recipientid" name="recipientid" hidden>
+				<i class="fa fa-close" onclick="closeForm()"></i>
+
+			</div>
+			<div class="chat-popup-tab">
+				<button type="button" class="btntab" id="btnuser"><i class="fa fa-user"></i></button>
+			
+				<button type="button" class="btntab" id="btngroup"><i class="fa fa-group"></i></button>
+				 
+			</div>
+			<div class="scroll-style1" id="popchatbody">
+			
+			</div>
+			<input type="file" name="filetoupload" id="UploadFile">
+			<div class="chat-popup-footer">
+				<textarea id="chatareapop" placeholder="Type message.." name="msg" required></textarea>
+				<button type="button" class="btn" id="sendmes"><i class="fa fa-send-o"></i></button>
+			</div>
+		</form>
+	</div>
+<script type="text/javascript">
+
+var x;
+var profname ="";
+var flag="";
+function mes(id,type) {
+	flag=<?=$flag?>;
+	if(flag == "1"){
+		$("#recipientid").val(id);
+		const user_id=<?php 
+		if(isset($_SESSION['userid'])){
+			echo json_encode($_SESSION['userid']);
+		}
+		?>;
+		const token =<?php 
+		if(isset($_SESSION['usertoken'])){
+			echo json_encode($_SESSION['usertoken']);
+		}
+		?>;
+		
+			$.ajax({
+			url: "https://eulims.onelab.dost.gov.ph/api/message/getcontact", //API LINK FROM THE CENTRAL
+			type: 'POST',
+			dataType: "JSON",
+			beforeSend: function (xhr) {
+				xhr.setRequestHeader('Authorization', 'Bearer '+ token);
+			}, 
+			data: {
+				userid: user_id,
+				recipientid: id,
+				type:type
+			},
+			success: function(response) {
+				var y;
+				
+				x="";
+				x = x+'<br>';
+				for(y=0;y<response.chat.length;y++){
+				//x = x+ response.chat[y].sender_userid;
+					var dt=new Date(response.chat[y].timestamp);
+					dt=formatAMPM(dt);
+					x = x+'<div>';
+					var messagetype= response.chat[y].message_type;
+					var chatdatatype= response.chat[y].chat_data_type;
+					if (response.chat[y].sender_userid != user_id){
+						
+						x = x+"<div class='message-blue'>";
+						if(chatdatatype == 2){
+							profname= response.chat[y].contact_id;
+							x = x+"<div class='message-prof'>"+profname+"</div>"; //Profile header	
+						}
+						
+						if(messagetype == 1){
+							x = x+"<p class='message-content'>"+response.chat[y].chat_data+"</p>";	
+						}else{
+							x= x+ "<a href='https://eulims.onelab.dost.gov.ph/uploads/message/"+response.chat[y].chat_data+"' download>"+response.chat[y].chat_data+"</a>";
+						}
+						
+						x = x+"<div class='message-timestamp-left'>"+dt+"</div>";
+						x = x+"</div>";
+						x = x+'<br>';
+					
+					
+					}else{
+						x = x+"<div class='message-orange'>";
+						if(messagetype == 1){
+							x = x+"<p class='message-content'>"+response.chat[y].chat_data+"</p>";	
+						}else{
+							x= x+ "<a href='https://eulims.onelab.dost.gov.ph/uploads/message/"+response.chat[y].chat_data+"' download>"+response.chat[y].chat_data+"</a>";
+						}
+						x = x+"<div class='message-timestamp-right'>"+dt+"</div>";
+						x = x+"</div>";
+						x = x+'<br>';
+					}
+
+					x = x+'</div>';
+							
+				}
+				
+				
+				$('#chattype').html(type);
+				$('#dataid').html(response.id);
+				if(type == 1){
+					$("#ctype").text("1");//personal message
+					$('#chathere').html(x); 
+					$('#profilename').html(response.profile.fullname);
+					
+					$('#popchatbody').html(x); 
+					
+					$('#profilenamepop').html(response.profile.fullname);
+				}
+				if(type == 2){
+					//console.log(response.profile);
+					
+					$("#ctype").text("2");//group message
+					$('#profilenamepop').html(response.profile.group_name);
+					$('#popchatbody').html(x); 
+				}
+				
+			},
+			error: function(xhr, status, error) {
+				alert(error);
+			}
+			});  
+			
+			$('#popchatbody').scrollTop($('#popchatbody')[0].scrollHeight);
+	
+	}
+ }
+
+
+function sendmessage() {
+   var textchat=$('#chatareapop').val();
+   if(textchat === ""){
+	   //alert("Hello");
+   }
+   else{
+	   $('#chattype').text("1");//Message type
+	   sendchat(textchat);
+   }
+   
+   if (document.getElementById("UploadFile").files.length === 0 ){ //For file attachment
+		//alert("Please select a file to upload");
+   }
+   else{
+	    $('#chattype').text("2");//Filetype
+		const token =<?php 
+		if(isset($_SESSION['usertoken'])){
+			echo json_encode($_SESSION['usertoken']);
+		}
+		?>;
+		var formData = new FormData($('form')[0]);
+		
+		$.ajax({
+			url: "https://eulims.onelab.dost.gov.ph/api/message/savefile", //API LINK FROM THE CENTRAL
+			type: 'POST',
+			dataType: "JSON",
+			beforeSend: function (xhr) {
+				xhr.setRequestHeader('Authorization', 'Bearer '+ token);
+			}, 
+			data: formData,
+			success: function(response) {
+				$('#UploadFile').val("");
+				var txt=response.filename; //Filename
+				if(response.message == "success"){
+					//alert("Oks na lodi proceed next step!");	
+					sendchat(txt);
+				}
+				else{
+					alert("Error ka lodi!");
+				}
+				
+				
+			},
+			error: function(xhr, status, error) {
+				alert(error);
+			},
+			cache: false,
+			contentType: false,
+			processData: false
+		}); 	
+   }
+ 
+  
+} 
+
+
+
+function formatAMPM(date) {
+ const ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
+ const mo = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);
+ const da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
+
+  var hours = date.getHours();
+  var minutes = date.getMinutes();
+  var ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  minutes = minutes < 10 ? '0'+minutes : minutes;
+  var strTime = da+"-"+mo+"-"+ye + " " + hours + ':' + minutes + ' ' + ampm;
+  return strTime;
+}
+
+window.setInterval(function(){
+ 
+  // var id= $("#recipientid").value();
+   var id=$("#recipientid").val();
+   var type =$("#ctype").text();
+   if(id == "")
+   {
+	  //alert("wala");   
+   }
+   else{
+	  //mes(id,type); 
+   } 
+  
+   
+  
+}, 5000);
+
+function openForm() {
+	document.getElementById("myForm").style.display = "block";
+}
+
+function closeForm() {
+	document.getElementById("myForm").style.display = "none";
+}
+
+$("#btnuser").click(function(){
+	$("#recipientid").val("");
+	$('#profilenamepop').html("");
+	contacts();
+});
+$("#btngroup").click(function(){
+	$("#recipientid").val("");
+	$('#profilenamepop').html("");
+	groupcontacts();
+});
+
+
+function contacts(){ //Personnal Messages
+    flag=<?=$flag?>;
+	if(flag == "1"){
+		var y;
+		 y = "<h4>List of Contacts </h4>";
+		<?php 
+		if($contacts){
+			foreach ($contacts as $data)
+			 { ?>
+			y=y + "<a class='thismessage' onclick='mes(<?=$data['user_id']?>,1)'>";
+			y= y + "<div class='first'><img src='/uploads/user/photo/user.png' alt='/uploads/user/photo/user.png' width='42' height='42'>&nbsp;<b>"+ '<?= $data['fullname']?>' +"</div>";
+			y= y + "</a>";
+			<?php } ?>
+			//GROUPS
+			y= y + "<br> <div> <h4>Groups Contacts </h4></div>";
+			<?php 
+			if($group){
+				foreach ($group as $data)
+				 { ?>
+					y=y + "<a class='thismessage1' onclick='mes(<?=$data['chat_group_id']?>,2)'>";
+					y= y + "<div class='first'><img src='/uploads/user/photo/group.png' alt='/uploads/user/photo/user.png' width='42' height='42'>&nbsp;<b>"+ '<?= $data['chatGroup']['group_name']?>' +"</div>";
+					y= y + "</a>";
+				<?php } 
+			}
+		}	
+		?>
+		
+		
+		$('#popchatbody').html(y); 
+	}	
+}
+function groupcontacts(){ //Group Messages
+	var y;
+	//document.getElementById('popuser').style.display='block';
+	 y = "<h4>List of Contacts </h4>";
+	<?php 
+		if($group){
+		foreach ($group as $data)
+		 { ?>
+				y=y + "<a class='thismessage1' onclick='mes(<?=$data['chat_group_id']?>,2)'>";
+				y= y + "<div class='first'><img src='/uploads/user/photo/group.png' alt='/uploads/user/photo/user.png' width='42' height='42'>&nbsp;<b>"+ '<?= $data['chatGroup']['group_name']?>' +"</div>";
+				y= y + "</a>";
+		<?php } 
+		}
+	?>
+	
+	$('#popchatbody').html(y); 
+}
+
+function sendchat(txt) {
+ //  var txt=$('#chatareapop').val();
+   const token =<?php 
+	if(isset($_SESSION['usertoken'])){
+		echo json_encode($_SESSION['usertoken']);
+	}
+	?>;
+   var id=$('#dataid').text();
+   var type = $('#ctype').text();
+   var dataxtype = $('#chattype').text();
+   const sender_userid=<?php 
+		if(isset($_SESSION['userid'])){
+			echo json_encode($_SESSION['userid']);
+		}
+	?>;
+	$.ajax({
+		url: "/chat/info/setmessage", //API LINK FROM THE CENTRAL
+		type: 'POST',
+		dataType: "JSON", 
+		data: {
+			sender_userid: sender_userid,
+			message: txt,
+			type: type,
+			id:id,
+			dataxtype: dataxtype
+		},
+		success: function(response) {
+			var dt=new Date();
+			dt=formatAMPM(dt);
+			x = x+'<br>';
+			x = x+"<div class='message-orange'>";
+			if(type == 1){
+				x = x+"<p class='message-content'>"+txt+"</p>";
+			}else{
+				x= x+ "<a href='https://eulims.onelab.dost.gov.ph/uploads/message/"+txt+"' download>"+txt+"</a>";
+			}
+			
+			
+			x = x+"<div class='message-timestamp-right'>"+dt+"</div>";
+			x = x+"</div>";
+			x = x+'<br>';
+			$('#chatareapop').val(" ");
+			$('#popchatbody').html(x); 
+		},
+		error: function(xhr, status, error) {
+			alert(error);
+		}
+	}); 	
+}
+$("#sendmes").click(function(){
+	sendmessage();
+});
+
+function getprofile(id) {
+	const token =<?php 
+	if(isset($_SESSION['usertoken'])){
+		echo json_encode($_SESSION['usertoken']);
+	}
+	?>;
+	$.ajax({
+		url: "/chat/info/profile", //API LINK FROM THE CENTRAL
+		type: 'POST',
+		dataType: "JSON",
+		data: {
+			id:id
+		},
+		success: function(response) {
+			return response.fullname;
+		},
+		error: function(xhr, status, error) {
+			alert(error);
+		}
+	}); 	
+}
+ </script>

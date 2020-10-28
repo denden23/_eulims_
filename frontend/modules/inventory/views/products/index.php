@@ -12,6 +12,7 @@ use yii\bootstrap\Modal;
 use yii\helpers\Url;
 use common\models\inventory\Categorytype;
 use common\models\inventory\Cost;
+use common\models\inventory\Producttype;
 
 $this->title = 'Products';
 $this->params['breadcrumbs'][] = $this->title;
@@ -59,6 +60,19 @@ Modal::end();
             'expandOneOnly' => true
         ],
         [
+                'attribute' => 'producttype_id',
+                // 'label' => 'Product Type',
+                'value' => function($model){                   
+                    return $model->producttype->producttype;                   
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filter' => ArrayHelper::map(Producttype::find()->asArray()->all(), 'producttype_id', 'producttype'),
+                'filterWidgetOptions' => [
+                    'pluginOptions' => ['allowClear' => true],
+                ],
+                'filterInputOptions' => ['placeholder' => 'Producttype', 'id' => 'grid-products-search-product_type_id']
+        ],
+        [
                 'attribute' => 'categorytype_id',
                 'label' => 'Category Type',
                 'value' => function($model){                   
@@ -74,9 +88,9 @@ Modal::end();
         'product_code',
         'product_name',
         [
-            'header'=>'Unit',
+            'header'=>'Onhand/Unit',
             'value'=>function($model){
-                return $model->unittype->unit;
+                return $model->totalqty." ".$model->unittype->unit;
             }
         ],
         [

@@ -6,7 +6,15 @@
     //require __DIR__ . '/params-local.php'
 );
 */
+
+$server = "localhost";
+$username = "eulims";
+$password = "eulims";
+
+
+
 return [
+    
     'id' => 'app-console',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'], 
@@ -38,6 +46,15 @@ return [
         ],
     ],
     'components' => [
+        'db'=>[
+            'class' => 'yii\db\Connection',  
+            'dsn' => 'mysql:host='.$server.';dbname=eulims',
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8',
+            'tablePrefix' => 'tbl_',
+        ],
+      
         'log' => [
             'targets' => [
                 [
@@ -83,6 +100,52 @@ return [
             'charset' => 'utf8',
             'tablePrefix' => 'tbl_',
         ],
+
+        'user' => [
+            //'identityClass' => 'mdm\admin\models\User',
+            //'class'=>'mdm\admin\models\User',
+            //'loginUrl' => ['admin/user/login'],
+         //   'identityClass' => 'common\models\system\User',
+            'class'=>'common\models\system\User',
+        ],
+        'session' => [ 
+            'class' => 'yii\web\Session'
+        ],
+        'mailer' => [
+            'class' => 'yii\swiftmailer\Mailer',
+            'viewPath' => '@common/mail',
+             'useFileTransport' => false,//set this property to false to send mails to real email addresses
+             //comment the following array to send mail using php's mail function
+             'transport' => [
+                 'class' => 'Swift_SmtpTransport',
+                 'host' => 'smtp.gmail.com',
+                 'username' => 'onelabmaps',
+                 'password' => 'dneiqjzzfgbjlyff',
+                 'port' => '587',
+                 'encryption' => 'tls',
+                 'streamOptions'=>[
+                    'ssl'=>[
+                         'verify_peer'=>false,
+                         'verify_peer_name'=>false,
+                         'allow_self_signed'=>true
+                   ]
+                 ]
+             ],
+     ],
+       
+        // 'request' => [
+
+        //     'cookies' => [
+
+        //         'class' => 'yii\web\Cookie',
+    
+        //         'httpOnly' => true,
+    
+        //         'secure' => true
+    
+        //     ],
+
+        // ],
         
 
     ],

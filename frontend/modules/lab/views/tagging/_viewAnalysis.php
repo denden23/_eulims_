@@ -53,6 +53,16 @@ $(".select-on-check-all").change(function(){
 
 SCRIPT;
 $this->registerJs($js);
+
+
+//get the roles
+$roles = \Yii::$app->authManager->getRolesByUser(\Yii::$app->user->id);
+$show = false;
+foreach ($roles as $role) {
+
+    if($role->name == "pro-ANALYST")
+        $show=true;
+}
 ?>
 
 <?= GridView::widget([
@@ -141,7 +151,8 @@ $this->registerJs($js);
 
                             if ($model->tagging){
                                 $profile= Profile::find()->where(['user_id'=> $model->tagging->user_id])->one();
-                                return $profile->firstname.' '. strtoupper(substr($profile->middleinitial,0,1)).'. '.$profile->lastname;
+                               // return $profile->firstname.' '. strtoupper(substr($profile->middleinitial,0,1)).'. '.$profile->lastname;
+                                return $profile->fullname;
                             }else{
                                 return "";
                             }
@@ -205,6 +216,7 @@ $this->registerJs($js);
                 ['class' => 'kartik\grid\ActionColumn',
                 'contentOptions' => ['style' => 'width: 8.7%'],
                 'template' => '{view}',
+                'visible' =>$show,
                 'buttons'=>[
                     'view'=>function ($url, $model) {
                         return Html::button('<span class="glyphicon glyphicon-pencil"></span>', ['value'=>Url::to(['/lab/tagging/updateanalysis','id'=>$model->analysis_id]), 'class' => 'btn btn-primary','onclick'=>'LoadModal(this.title, this.value);','title' => Yii::t('app', "Update Analysis")]);

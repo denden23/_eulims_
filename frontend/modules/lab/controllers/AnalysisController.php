@@ -24,7 +24,6 @@ use common\models\lab\Testnamemethod;
 use common\models\lab\Methodreference;
 use common\models\lab\Testname;
 use yii\data\ArrayDataProvider;
-
 use DateTime;
 
 /**
@@ -156,20 +155,19 @@ class AnalysisController extends Controller
     public function actionGettestnamemethod()
 	{
       
-        $labid = $_GET['lab_id'];
-        $testname_id = $_GET['id'];
+        $testname_id = $_GET['testname_id'];
+        $sampletype_id = $_GET['sampletype_id'];
+        $sample = $_GET['sample'];
 
-        // $testname_id = $_GET['testcategory_id'];
-        // $testname_id = $_GET['sampletype_id'];
-      
-            // $testnamemethod = Testnamemethod::find()
-        // ->leftJoin('tbl_sampletype_testname', 'tbl_sampletype_testname.testname_id=tbl_testname_method.testname_id')
-        // ->leftJoin('tbl_lab_sampletype', 'tbl_lab_sampletype.sampletype_id=tbl_sampletype_testname.sampletype_id')
-        // ->where(['tbl_testname_method.testname_id'=>$testname_id, 'tbl_lab_sampletype.testcategory_id'=>$testcategory_id, 'tbl_lab_sampletype.sampletype_id'=>$sampletype_id ])->all();
+        //get the information of the sample
+        $sample = Sample::findOne($sample[0]);
+        //$sampletype_id = $sample->sampletype_id;
 
-        //dapat naka left join ito.. considering yung mga sample type and test category
+        //get the lab_id of the request
+        $lab_id= $sample->request->lab_id;
+
         $testnamemethod = Testnamemethod::find()
-        ->where(['testname_id'=>$testname_id])->all();
+        ->where(['tbl_testname_method.testname_id'=>$testname_id,'tbl_testname_method.sampletype_id'=>$sampletype_id,'tbl_testname_method.lab_id'=>$lab_id])->all();
 
         
         $testnamedataprovider = new ArrayDataProvider([
@@ -189,21 +187,42 @@ class AnalysisController extends Controller
     public function actionListsampletype() {
         $out = [];
         if (isset($_POST['depdrop_parents'])) {
-            $id = end($_POST['depdrop_parents']);
+            //$sampleids = end($_POST['depdrop_parents']);
+            $sampletypeId = end($_POST['depdrop_parents']);
 
-            $list =  Testname::find()
-            ->innerJoin('tbl_sampletype_testname', 'tbl_testname.testname_id=tbl_sampletype_testname.testname_id')
-            ->Where(['tbl_sampletype_testname.sampletype_id'=>$id])
-            ->asArray()
-            ->all();
+
+            //**********************************************************
+            //unused but important later
+            //check if all the selected values are of the same sample type 
+
+            // $sampletypeId="";
+            // foreach($sampleids as $id){
+            //     $sample = Sample::findOne($id);
+            //     if($sampletypeId=="")
+            //         $sampletypeId=$sample->sampletype_id;
+            //     else{
+            //         if($sampletypeId!==$sample->sampletype_id){
+            //             //return if empty data because sampleype_id are not the same
+            //             echo Json::encode(['output' => '', 'selected'=>'']);
+            //             return;
+            //         }
+            //     }
+            // }
+
+            //************************************************
+
+            //this line belows removes the purpose of the sampletype _testname table , gets all the testnamemethod join with testname under certain sampletype_id
+            $list = Testnamemethod::find()->with('testname')->where(['sampletype_id'=>$sampletypeId])->asArray()->all();
 
             $selected  = null;
-            if ($id != null && count($list) > 0) {
+            if ($sampletypeId != null && count($list) > 0) {
                 $selected = '';
-                foreach ($list as $i => $sampletype) {
-                    $out[] = ['id' => $sampletype['testname_id'], 'name' => $sampletype['testName']];
-                    if ($i == 0) {
-                        $selected = $sampletype['testname_id'];
+                foreach ($list as $i) {
+                    if($i['testname']){
+                        $out[] = ['id' => $i['testname']['testname_id'], 'name' => $i['testname']['testName']];
+                        if ($i == 0) {
+                            $selected = $testname['testname_id'];
+                        }
                     }
                 }
                 \Yii::$app->response->data = Json::encode(['output'=>$out, 'selected'=>'']);
@@ -248,20 +267,13 @@ class AnalysisController extends Controller
      */
     public function actionCreate($id)
     {
-        $model = new Analysis; 
+        $model = new Analysis;
         $session = Yii::$app->session;
         $searchModel = new AnalysisSearch();
         $samplesearchmodel = new SampleSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $samplesQuery = Sample::find()->where(['request_id' => $id]);
-        $sampleDataProvider = new ActiveDataProvider([
-                'query' => $samplesQuery,
-                'pagination' => [
-                    'pageSize' => false,
-                           ],                   
-        ]);
+        $samplesQuery = Sample::find()->where(['request_id' => $id])->all();
 
-        $sample_count = $sampleDataProvider->getTotalCount();     
         $request_id = $_GET['id'];
         $request = $this->findRequest($request_id);
         $labId = $request->lab_id;
@@ -270,7 +282,7 @@ class AnalysisController extends Controller
         $test = [];     
         if ($model->load(Yii::$app->request->post())) {
            $requestId = (int) Yii::$app->request->get('request_id');
-                 $sample_ids= $_POST['selection'];           
+                 $sample_ids= $_POST['base_samples'];
                  $post= Yii::$app->request->post();
 
                 foreach ($sample_ids as $sample_id){                
@@ -285,10 +297,9 @@ class AnalysisController extends Controller
                     $analysis->pstcanalysis_id = (int) $post['Analysis']['pstcanalysis_id'];
                     $analysis->request_id = $request_id;
                     $analysis->type_fee_id = 1;
-                    $analysis->rstl_id = $GLOBALS['rstl_id'];
+                    $analysis->rstl_id = Yii::$app->user->identity->profile->rstl_id;
                     $analysis->test_id = (int) $post['Analysis']['test_id'];
-                    $analysis->category_id = (int) $post['Analysis']['category_id'];
-                    $analysis->sample_type_id = (int) $post['Analysis']['sample_type_id'];
+                    //$analysis->sample_type_id = (int) $post['Analysis']['sample_type_id'];
                     $analysis->testcategory_id = $method->method_reference_id;
                     $analysis->is_package = (int) $post['Analysis']['is_package'];
                     $analysis->method = $method->method;
@@ -318,7 +329,7 @@ class AnalysisController extends Controller
                // Yii::$app->session->setFlash('success', 'Analysis Successfully Added'); 
                 return $this->redirect(['/lab/request/view', 'id' =>$request_id]);
 
-       }else if (Yii::$app->request->isAjax) {
+       }//else if (Yii::$app->request->isAjax) {
                 $model->rstl_id = $GLOBALS['rstl_id'];
                 $model->pstcanalysis_id = $GLOBALS['rstl_id'];
                 $model->request_id = $request_id;
@@ -334,12 +345,13 @@ class AnalysisController extends Controller
                 'searchModel' => $searchModel,
                 'samplesearchmodel'=>$samplesearchmodel,
                 'dataProvider' => $dataProvider,
-                'sampleDataProvider' => $sampleDataProvider,
                 'testcategory' => $testcategory,
                 'test' => $test,
-                'sampletype'=>$sampletype
+                'sampletype'=>$sampletype,
+                'base_sample'=>$samplesQuery,
+                'sampletypewithlab'=>$this->listSampletype($labId),
             ]);
-        }   
+       // }   
     }
   
     /**
@@ -366,17 +378,11 @@ class AnalysisController extends Controller
         $model = $this->findModel($id);
         
         $analysisquery = Analysis::find()->where(['analysis_id' => $id])->one();
-        $samplesQuery = Sample::find()->where(['sample_id' => $analysisquery->sample_id]);
+        $samplesQuery = Sample::find()->where(['sample_id' => $analysisquery->sample_id])->all();
         $requestquery = Request::find()->where([ 'request_id'=> $analysisquery->request_id])->one();
         $paymentitem = Paymentitem::find()->where([ 'request_id'=> $analysisquery->request_id])->one();
         $request_id = $requestquery->request_id;
 
-            $sampleDataProvider = new ActiveDataProvider([
-                'query' => $samplesQuery,
-                'pagination' => [
-                 'pageSize' => 10,
-                        ],        
-                ]);
         
                 $url = \Yii::$app->request->url;
                 $rid = substr($url, 24);
@@ -427,20 +433,21 @@ class AnalysisController extends Controller
                 } elseif (Yii::$app->request->isAjax) {
         return $this->renderAjax('_form', [
             'model' => $model,
-             'sampleDataProvider' => $sampleDataProvider,
              'testcategory' => $testcategory,
              'request_id'=>$request_id,
             'test' => $test,
-            'sampletype'=>$sampletype
+            'sampletype'=>$sampletype,
+            'base_sample'=>$samplesQuery,
+            'sampletypewithlab'=>$this->listSampletype($labId),
         ]);
     }else{
         return $this->render('_form', [
             'model' => $model,
-             'sampleDataProvider' => $sampleDataProvider,
              'request_id'=>$request_id,
              'testcategory' => $testcategory,
             'sampletype' => $sampletype,
             'test' => $test,
+            'base_sample'=>$samplesQuery
         ]);
       }   
     }
@@ -498,5 +505,14 @@ class AnalysisController extends Controller
         throw new NotFoundHttpException('The requested page does not exist.');
     }
 
+    protected function listSampletype($labId)
+    {
+        $sampletype = ArrayHelper::map(Sampletype::find()->joinWith('labSampletypes')->andWhere(['lab_id'=>$labId,'status_id'=>1])->all(), 'sampletype_id', 
+            function($sampletype, $defaultValue) {
+                return $sampletype->type;
+        });
+
+        return $sampletype;
+    }
    
 }

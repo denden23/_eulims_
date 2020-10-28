@@ -24,7 +24,7 @@ use common\models\lab\Csf;
 ?>
 
 <div class="row" style="float: right;padding-right: 30px">
-<?php echo Html::button("<span class='glyphicon glyphicon-print'></span> Print CSF",['value' => '/lab/csf/index','onclick'=>'location.href=this.value', 'class' => 'btn btn-primary', 'title' => Yii::t('app', "View Request")]); ?>
+<?php echo Html::button("<span class='glyphicon glyphicon-print'></span> Print CSF",['value' => '/lab/csf/printcustomer','onclick'=>'location.href=this.value', 'class' => 'btn btn-primary', 'title' => Yii::t('app', "View CSF")]); ?>
 
 
 </div>

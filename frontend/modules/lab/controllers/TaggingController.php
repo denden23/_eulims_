@@ -49,7 +49,7 @@ class TaggingController extends Controller
         $dataProvider = new ActiveDataProvider([
                 'query' => $samplesQuery,
                 'pagination' => [
-                    'pageSize' => 10,
+                    'pageSize' => false,
                 ],
              
         ]);
@@ -115,68 +115,119 @@ class TaggingController extends Controller
     public function actionUpdateanalysis($id)
     {
         $taggingmodel = Tagging::find()->where(['analysis_id'=>$id])->one();
-        $analysis = Analysis::find()->where(['analysis_id'=>$id])->one();
+        $analysis = Analysis::find()->where(['analysis_id'=>$id])->one();      
         $model = new Tagging();
-        if ($model->load(Yii::$app->request->post())) {
-            $start = $_POST['Tagging']['start_date'];
-            $end = $_POST['Tagging']['end_date'];
+        $taggingmodel->disposed_date = date('Y-m-d',strtotime("+1 month"));
+        if ($taggingmodel){
+            return $this->renderAjax('updateanalysis', [
+                'taggingmodel' => $taggingmodel,
+            ]);
+        }else{
+            return $this->renderAjax('nostatus', [
+                'taggingmodel' => $taggingmodel,
+            ]);
+        }
+
+      
+    }
+
+    public function actionMonthlyreport($month, $year, $lab_id)
+    {
+      $nmonth = date('m', strtotime($month));
+        $searchkey =  $year.'-'.$nmonth;
+        $request_query = Request::find()
+        ->where(['like', 'request_datetime', $searchkey ])
+        ->andWhere(['lab_id'=> $lab_id,'status_id'=>1]);
+
+        $requestdataprovider = new ActiveDataProvider([
+                'query' => $request_query,
+                'pagination' => [
+                    'pageSize' => false,
+                ],
+             
+        ]); 
+
+            return $this->renderAjax('monthlyreport', [
+               'requestdataprovider' => $requestdataprovider,
+                'month'=>$month,
+                'year'=>$year,
+                'nmonth'=>$nmonth
+            ]);
+        
+
+      
+    }
+
+    public function actionUpdateana()
+    {      
+
+        // var_dump($_POST); exit;
+        if(isset($_POST['id'])){
+            $start = $_POST['start_date'];
+            $end = $_POST['end_date'];
+            $user_id = $_POST['user_id'];
+
+            $manner = null;
+            $disposed = null;
+
+            if(isset($_POST['manner']) && isset($_POST['disposed_date'])){
+                $manner = $_POST['manner'];
+                $disposed = $_POST['disposed_date'];
+            }
+
+            $profile = Profile::find()->where(['fullname'=> $user_id])->one();
+
+            $name = $profile->user_id;
+
+            $id = $_POST['id'];
+            $analysis_id = $_POST['id'];
 
 
             $Connection= Yii::$app->labdb;
-            $sql="UPDATE `tbl_tagging` SET `start_date`='$start', `end_date`='$end' WHERE `analysis_id`=".$id;
+            $sql="UPDATE `tbl_tagging` SET 
+            `start_date`='$start', 
+            `end_date`='$end', 
+            `user_id`='$name',
+            `disposed_date`='$disposed',
+            `manner`='$manner'
+             WHERE `analysis_id`=".$id;
             $Command=$Connection->createCommand($sql);
             $Command->execute();
 
             $searchModel = new TaggingSearch();
             $model = new Sample();
-            
-            $samplesQuery = Sample::find()->where(['sample_id' =>0]);
-            $dataProvider = new ActiveDataProvider([
-                    'query' => $samplesQuery,
-                    'pagination' => [
-                        'pageSize' => 10,
-                    ],
-                 
-            ]);
 
-           return $this->render('index', [
-               'searchModel' => $searchModel,
-               'dataProvider' => $dataProvider,
-               'model'=>$model,
-           ]);
 
-           ///////////////////////////////////////////////////////// 
+             
+            $analysis= Analysis::find()->where(['analysis_id' => $id])->one();      
+
             $samplesQuery = Sample::find()->where(['sample_id' =>$analysis->sample_id]);
             $sampleDataProvider = new ActiveDataProvider([
                     'query' => $samplesQuery,
                     'pagination' => [
-                        'pageSize' => 10,
+                        'pageSize' => false,
                     ],
                  
             ]);
-            $analysisQuery = Analysis::find()->where(['sample_id' => $analysis->sample_id]);      
+            $analysis_id = $analysis->sample_id;
+            $analysisQuery = Analysis::find()->where(['sample_id' => $analysis->sample_id]);  
             $analysisdataprovider = new ActiveDataProvider([
                     'query' => $analysisQuery,
                     'pagination' => [
-                        'pageSize' => 10,
+                        'pageSize' => false,
                     ],
                  
             ]);
-
-          
-
             return $this->renderAjax('_viewAnalysis', [
                 'sampleDataProvider' => $sampleDataProvider,
                 'analysisdataprovider'=> $analysisdataprovider,
-                'analysis_id'=>$id,
+                'analysis_id'=>$analysis_id,
              ]);
          
-           
-        }
-
-        return $this->renderAjax('updateanalysis', [
-            'taggingmodel' => $taggingmodel,
-        ]);
+            
+        }else{
+            return "<h3>No Data</h3>";  
+         }
     }
 
     /**
@@ -211,7 +262,11 @@ class TaggingController extends Controller
 
     public function actionGetsamplecode($q = null, $id = null) {
 
-        //insert type of lab
+        
+        $GLOBALS['user_id']=Yii::$app->user->identity->profile->user_id;
+        $GLOBALS['rstl_id']=Yii::$app->user->identity->profile->rstl_id;
+        $profile = Profile::find()->where(['user_id'=> $GLOBALS['user_id']])->one();
+
         $lab = Yii::$app->user->identity->profile->lab_id;
         $year = date("Y");
 
@@ -220,11 +275,14 @@ class TaggingController extends Controller
         if (!is_null($q)) {
             $query = new Query;
             $query->select('sample_id as id, sample_code AS text')
+                    ->leftJoin('tbl_request', 'tbl_request.request_id=tbl_sample.request_id')
                     ->from('tbl_sample')
                     ->where(['like', 'sample_code', $q])
                     ->Andwhere(['sample_year'=>$year])
+                    ->Andwhere(['tbl_sample.rstl_id'=>$GLOBALS['rstl_id']])
+                    ->Andwhere(['tbl_request.lab_id'=>$profile->lab_id])
                     ->orderBy(['sample_id'=>SORT_DESC])
-                    ->limit(20);
+                    ->limit(5);
             $command = $query->createCommand();
             $command->db= \Yii::$app->labdb;
             $data = $command->queryAll();
@@ -236,8 +294,7 @@ class TaggingController extends Controller
     }
 
     public function actionStartanalysis()
-    {
-        
+    {      
         if(isset($_POST['id'])){
 			$ids = $_POST['id'];
             $analysisID = explode(",", $ids);
@@ -247,40 +304,27 @@ class TaggingController extends Controller
                     
                     $taggingmodel = Tagging::find()->where(['analysis_id'=>$aid])->one();
                     if ($taggingmodel){
-
                     }else{
                         $tagging = new Tagging();
                         $profile= Profile::find()->where(['user_id'=> Yii::$app->user->id])->one();
                         $tagging->user_id = $profile->user_id;
                         $tagging->analysis_id = $aid;
                         $tagging->start_date = date("Y-m-d");
-                       // $tagging->end_date = "0000-00-00";
                         $tagging->tagging_status_id = 1;
-                     //   $tagging->cancel_date = "0000-00-00";
                         $tagging->reason = 1;
                         $tagging->cancelled_by = 1;
-                    //    $tagging->disposed_date = "0000-00-00";
                         $tagging->iso_accredited = 1;
-                        $tagging->save(false); 
-
-
-                       	
-                    }
-                 
+                        $tagging->save(false);                       	
+                    }            
             }
-
         }
-       
-
             $analysis_id = $_POST['analysis_id'];
-
-            
-            
+   
             $samplesQuery = Sample::find()->where(['sample_id' =>$analysis_id]);
             $sampleDataProvider = new ActiveDataProvider([
                     'query' => $samplesQuery,
                     'pagination' => [
-                        'pageSize' => 10,
+                        'pageSize' => false,
                     ],
                  
             ]);
@@ -288,7 +332,7 @@ class TaggingController extends Controller
             $analysisdataprovider = new ActiveDataProvider([
                     'query' => $analysisQuery,
                     'pagination' => [
-                        'pageSize' => 10,
+                        'pageSize' => false,
                     ],
                  
             ]);
@@ -323,7 +367,7 @@ class TaggingController extends Controller
                         $Command=$Connection->createCommand($sql);
                         $Command->execute();                      
                         $sample= Sample::find()->where(['sample_id'=> $aid])->one();
-                                      
+                        //count number of completed analysis of the sample        
                         $taggingcount= Tagging::find()
                         ->leftJoin('tbl_analysis', 'tbl_tagging.analysis_id=tbl_analysis.analysis_id')
                         ->leftJoin('tbl_sample', 'tbl_analysis.sample_id=tbl_sample.sample_id')    
@@ -364,7 +408,7 @@ class TaggingController extends Controller
              $sampleDataProvider = new ActiveDataProvider([
                      'query' => $samplesQuery,
                      'pagination' => [
-                         'pageSize' => 10,
+                         'pageSize' => false,
                      ],
                   
              ]);
@@ -372,7 +416,7 @@ class TaggingController extends Controller
              $analysisdataprovider = new ActiveDataProvider([
                      'query' => $analysisQuery,
                      'pagination' => [
-                         'pageSize' => 10,
+                         'pageSize' => false,
                      ],
                   
              ]);
@@ -397,22 +441,22 @@ class TaggingController extends Controller
          $sampleDataProvider = new ActiveDataProvider([
                  'query' => $samplesQuery,
                  'pagination' => [
-                     'pageSize' => 10,
+                     'pageSize' => false,
                  ],       
          ]);
 
          $analysisQuery = Analysis::find()->where(['sample_id' => $id]);
-         $request = Request::find()->where(['request_id' =>42]);
+         //$request = Request::find()->where(['request_id' =>42]);
          $analysisdataprovider = new ActiveDataProvider([
                  'query' => $analysisQuery,
                  'pagination' => [
-                     'pageSize' => 10,
+                     'pageSize' => false,
                  ],
               
          ]);
          
          return $this->renderAjax('_viewAnalysis', [
-            'request'=>$request,
+           // 'request'=>$request,
             'model'=>$model,
             'sampleDataProvider' => $sampleDataProvider,
             'analysisdataprovider'=> $analysisdataprovider,

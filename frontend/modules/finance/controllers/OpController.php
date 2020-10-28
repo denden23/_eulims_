@@ -177,7 +177,7 @@ class OpController extends Controller
     {
         $model = $this->findModel($id);
         $paymentitem_model= new Paymentitem();
-        
+       
         $query = Paymentitem::find()->where(['orderofpayment_id' => $model->orderofpayment_id]);
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -194,7 +194,7 @@ class OpController extends Controller
                 ->andWhere(['not', ['paymentitem_id' => $str_request]])
                 ->one();
             
-            if($lists['ids']){
+            /*if($lists['ids']){
                $sum = Paymentitem::find()->where(['orderofpayment_id' => $model->orderofpayment_id])
                  ->andWhere(['not', ['paymentitem_id' => $str_request]])
                  ->sum('amount');
@@ -217,18 +217,23 @@ class OpController extends Controller
                 $sql_query2->bindParam(':op_id',$opid);
                 $sql_query2->execute();
 
-            }
-            $session->set('updatepopup',"executed");
-            return $this->redirect(['/finance/op']);  
+            } */
+           
          
         } else {
+            $collectiontype=ArrayHelper::map(Collectiontype::find()->all(), 'collectiontype_id', 'natureofcollection');
+            $customer=ArrayHelper::map(Customer::find()->all(),'customer_id','customer_name');
             return $this->renderAjax('update', [
                 'model' => $model,
                 'dataProvider'=>$dataProvider,
-                'paymentitem_model'=>$paymentitem_model
+                'paymentitem_model'=>$paymentitem_model,
+                'collection_type' => $collectiontype,
+                'customers' => $customer
             ]);
         }
         
+		 Yii::$app->session->setFlash('success','Successfully Updated!');
+         return $this->redirect(['/finance/op']);  
        
     }
     
@@ -448,12 +453,12 @@ class OpController extends Controller
                  ->andWhere(['status' => 1])
                  ->sum('amount');
             $this->updateTotalOP($op_id, $sum);
-            echo $out;
+           echo $out;
             return;
         }
     }
     
-    public function actionAddPaymentitem($opid,$customerid)
+    /*public function actionAddPaymentitem($opid,$customerid)
     {
         $op=$this->findModel($opid);
         $customer_id=$op->customer_id;
@@ -476,7 +481,28 @@ class OpController extends Controller
         else{
             return $this->render('_request', ['dataProvider'=> $paymentitemDataProvider,'opid'=>$opid,'stat'=>1]);
         }
-    }
+    }*/
+	public function actionAddPaymentitem($collectiontype_id,$opid) {
+		if($collectiontype_id == 1 || $collectiontype_id == 2){
+             
+				  $op=Op::find()->where(['orderofpayment_id' => $opid])->one();
+				  $customerid=$op->customer_id;
+                  /*$query = Request::find()->where(['not', ['posted' => 1]])->andWhere(['customer_id' =>$customerid]);
+                    $dataProvider = new ActiveDataProvider([
+                        'query' => $query,
+                    ]); 
+                    $dataProvider->pagination->pageSize=500; */
+				  $paymentitemDataProvider = new SqlDataProvider([
+					'sql' => 'SELECT *, eulims_lab.fnGetCustomer(customer_id) as CustomerName FROM eulims_lab.tbl_request WHERE customer_id IN('.$customerid.') and posted <> 1',
+					'key'=>'request_id',
+				  ]);	
+                  return $this->renderAjax('_request', ['dataProvider'=> $paymentitemDataProvider,'opid'=>$opid,'stat'=>1]);
+          }else{
+              return $this->renderAjax('_form_paymentitem', [
+                'paymentitem' => (empty($paymentitem)) ? [new Paymentitem()] : $paymentitem
+                ]);
+          }
+	}	
     public function actionSavePaymentitem($request_ids,$opid){
         $total_amount=0;
         $str_request = explode(',', $request_ids);
@@ -519,14 +545,14 @@ class OpController extends Controller
       //find the record the testreport
       $op =$this->findModel($id);
       $var=$op->getBankAccount();
-      if($var['bank_name'] == ""){
+     /* if($var['bank_name'] == ""){
          Yii::$app->session->setFlash('warning', 'Please configure Bank Details!');
           return $this->redirect(['/finance/op/view?id='.$id]); 
-      }else{
+      }else{ */
           $exporter = new Opspreadsheet([
             'model'=>$op,
            ]);
-      }
+     // }
       //echo $id;
       //exit;
       

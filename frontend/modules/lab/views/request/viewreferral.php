@@ -263,7 +263,7 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                                 $link .= !empty($model->request_ref_num) && $model->referralrequest->referral_type_id == 1 ? Html::button('<span class="glyphicon glyphicon-upload"></span> Upload', ['value'=>Url::to(['/referrals/attachment/upload_deposit','referral_id'=>$model->referral_id,'request_id'=>$model->request_id]), 'onclick'=>'upload(this.value,this.title)', 'class' => 'btn btn-primary btn-xs','title' => 'Upload Deposit Slip']) : '';
                                 if($depositslip > 0){
                                     foreach ($depositslip as $deposit) {
-                                        $link .= "<br>".Html::a('<span class="glyphicon glyphicon-save-file"></span> '.$deposit['filename'],'/referrals/attachment/download?request_id='.$model->request_id.'&file='.$deposit['attachment_id'], ['style'=>'font-size:12px;color:#000077;font-weight:bold;','title'=>'Download Deposit Slip','target'=>'_self']);
+                                        $link .= "<br>".Html::a('<span class="glyphicon glyphicon-save-file"></span> '.$deposit['filename'],'/referrals/attachment/download?request_id='.$model->request_id.'&file='.$deposit['attachment_id'].'&referral_id='.$model->referral_id, ['style'=>'font-size:12px;color:#000077;font-weight:bold;','title'=>'Download Deposit Slip','target'=>'_self']);
 
                                     }
                                 }
@@ -282,7 +282,7 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                                 $link .= !empty($model->request_ref_num) && $model->referralrequest->referral_type_id == 2 ? Html::button('<span class="glyphicon glyphicon-upload"></span> Upload', ['value'=>Url::to(['/referrals/attachment/upload_or','referral_id'=>$model->referral_id,'request_id'=>$model->request_id]), 'onclick'=>'upload(this.value,this.title)', 'class' => 'btn btn-primary btn-xs','title' => 'Upload Official Receipt']) : '';
                                 if($officialreceipt > 0){
                                     foreach ($officialreceipt as $or) {
-                                        $link .= "<br>".Html::a('<span class="glyphicon glyphicon-save-file"></span> '.$or['filename'],'/referrals/attachment/download?request_id='.$model->request_id.'&file='.$or['attachment_id'], ['style'=>'font-size:12px;color:#000077;font-weight:bold;','title'=>'Download Official Receipt','target'=>'_self']);
+                                        $link .= "<br>".Html::a('<span class="glyphicon glyphicon-save-file"></span> '.$or['filename'],'/referrals/attachment/download?request_id='.$model->request_id.'&file='.$or['attachment_id'].'&referral_id='.$model->referral_id, ['style'=>'font-size:12px;color:#000077;font-weight:bold;','title'=>'Download Official Receipt','target'=>'_self']);
 
                                     }
                                 }
@@ -354,6 +354,18 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                     ],
                 ],
                 [
+                    'attribute'=>'customer_description',
+                    'header'=>'Description provided by Customer',
+                    'format' => 'raw',
+                    'enableSorting' => false,
+                    'value' => function($data){
+                        return empty($data['customer_description']) ? "<span style='color:#444444;font-size:11px;'><i>No information provided</i></span>" : $data['customer_description'];
+                    },
+                   'contentOptions' => [
+                        'style'=>'max-width:180px; overflow: auto; white-space: normal; word-wrap: break-word;'
+                    ],
+                ],
+                [
                     'class' => 'kartik\grid\ActionColumn',
                     'template' => '{update} {delete} {cancel}',
                     'dropdown' => false,
@@ -395,6 +407,13 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 ],
             ];
 
+            
+            if($requeststatus > 0 && $notified == 0 && $hasTestingAgency == 0 && empty($model->request_ref_num) && $checkTesting == 0 && empty($model->pstc_id) && empty($model->pstc_request_id)) {
+                $btnSample = Html::button('<i class="glyphicon glyphicon-plus"></i> Add Sample', ['disabled'=>$enableRequest, 'value' => Url::to(['sample/create','request_id'=>$model->request_id]),'title'=>'Add Sample', 'onclick'=>'addSample(this.value,this.title)', 'class' => 'btn btn-success','id' => 'modalBtn']);
+            }  else {
+                $btnSample = "";
+            }
+
             echo GridView::widget([
                 'id' => 'sample-grid',
                 'dataProvider'=> $sampleDataProvider,
@@ -410,8 +429,8 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 'panel' => [
                     'heading'=>'<h3 class="panel-title">Samples</h3>',
                     'type'=>'primary',
-                    'before'=>($requeststatus > 0 && $notified == 0 && $hasTestingAgency == 0 && trim($model->request_ref_num) == "" && $checkTesting == 0) ? Html::button('<i class="glyphicon glyphicon-plus"></i> Add Sample', ['disabled'=>$enableRequest, 'value' => Url::to(['sample/create','request_id'=>$model->request_id]),'title'=>'Add Sample', 'onclick'=>'addSample(this.value,this.title)', 'class' => 'btn btn-success','id' => 'modalBtn']) : Html::button('<i class="glyphicon glyphicon-print"></i> Print Label', ['disabled'=>!$enablePrintLabel, 'onclick'=>"window.location.href = '" . \Yii::$app->urlManager->createUrl(['/reports/preview?url=/lab/request/printlabel','request_id'=>$model->request_id]) . "';" ,'title'=>'Print Label', 'class' => 'btn btn-success'])." ".$btnGetSamplecode,
-                    'after'=>false,
+                    'before' => $btnSample.(empty($model->request_ref_num) || empty($data->sample_code) ? '' : Html::button('<i class="glyphicon glyphicon-print"></i> Print Label', ['disabled'=>!$enablePrintLabel, 'onclick'=>"window.location.href = '" . \Yii::$app->urlManager->createUrl(['/reports/preview?url=/lab/request/printlabel','request_id'=>$model->request_id]) . "';" ,'title'=>'Print Label', 'class' => 'btn btn-success'])).$btnGetSamplecode,
+                    'after' => false,
                 ],
                 'columns' => $sampleGridColumns,
                 'toolbar' => [
@@ -469,13 +488,7 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 'enableSorting' => false,
                 'format' => 'raw',
                 'value' => function($model) {
-                    if($model->type_fee_id == 2 && $model->is_package_name == 1){
-                        return $model->package_name;
-                    } elseif($model->type_fee_id == 2 && $model->is_package_name == 0){
-                        return "&nbsp;&nbsp;<span style='font-size:12px;'>".$model->testname."</span>";
-                    } else {
-                        return $model->testname;
-                    }
+                    return $model->testname;
                 },
             ],
             [
@@ -485,13 +498,7 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 'contentOptions' => ['style' => 'width: 50%;word-wrap: break-word;white-space:pre-line;'],
                 'format' => 'raw',
                 'value' => function($model) {
-                    if($model->type_fee_id == 2 && $model->is_package_name == 1){
-                        return '-';
-                    } elseif($model->type_fee_id == 2 && $model->is_package_name == 0){
-                        return "&nbsp;&nbsp;<span style='font-size:12px;'>".$model->method."</span>";
-                    } else {
-                        return $model->method;
-                    }
+                    return $model->method;
                 },
             ],
             [
@@ -501,13 +508,7 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 'enableSorting' => false,
                 'format' => 'raw',
                 'value' => function($model) {
-                    if($model->type_fee_id == 2 && $model->is_package_name == 1){
-                        return 1;
-                    } elseif($model->type_fee_id == 2 && $model->is_package_name == 0){
-                        return "-";
-                    } else {
-                        return $model->quantity;
-                    }
+                    return $model->quantity;
                 },  
                 'pageSummary' => '<span style="float:right";>SUBTOTAL<BR>DISCOUNT<BR><B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TOTAL</B></span>',       
             ],
@@ -516,7 +517,7 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 'enableSorting' => false,
                 'hAlign'=>'right',
                 'value'=>function($model){
-                    return ($model->type_fee_id == 2 && $model->is_package_name == 0) ? '-' : number_format($model->fee,2);
+                    return number_format($model->fee,2);
                 },
                 'contentOptions' => [
                     'style'=>'max-width:80px; overflow: auto; white-space: normal; word-wrap: break-word;'
@@ -570,23 +571,23 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                     'update'=>function ($url, $model) use ($requeststatus,$notified,$checkTesting) {
                         if($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id != 2){
                             return Html::button('<span class="glyphicon glyphicon-pencil"></span>', ['onclick'=>'updateAnalysisReferral('.$model->analysis_id.','.$model->request_id.',this.title)', 'class' => 'btn btn-primary','title' => 'Update Analysis']);
-                        } elseif($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id == 2 && $model->is_package_name == 1) {
+                        } elseif($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id == 2 && $model->is_package == 1) {
                             return Html::button('<span class="glyphicon glyphicon-pencil"></span>', ['value'=>Url::to(['/lab/analysisreferral/updatepackage','analysis_id'=>$model->analysis_id,'sample_id'=>$model->sample_id,'package_id'=>$model->package_id,'request_id'=>$model->request_id]),'onclick'=>'updatePackageReferral('.$model->package_id.','.$model->sample_id.','.$model->request_id.',this.value,this.title)', 'class' => 'btn btn-primary','title' => 'Update Package']);
                         } else {
                             return null;
                         }
                     },
                     'delete'=>function ($url, $model) use ($requeststatus,$notified,$checkTesting) {
-                        if($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id != 2 && $model->is_package_name == 0){
+                        if($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id != 2 && $model->is_package == 0){
                             return Html::a('<span class="glyphicon glyphicon-trash"></span>', '/lab/analysisreferral/delete?id='.$model->analysis_id,['data-confirm'=>"Are you sure you want to delete this analysis?<b></b>", 'data-method'=>'post', 'class'=>'btn btn-danger','title'=>'Delete Analysis','data-pjax'=>'0']);
-                        } elseif($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id == 2 && $model->is_package_name == 1) {
+                        } elseif($requeststatus > 0 && $notified == 0 && $checkTesting == 0 && $model->type_fee_id == 2 && $model->is_package == 1) {
                             return Html::a('<span class="glyphicon glyphicon-trash"></span>','/lab/analysisreferral/deletepackage?sample_id='.$model->sample_id.'&package_id='.$model->package_id.'&request_id='.$model->request_id,['data-confirm'=>"This will delete all the analyses under this package. Click OK to proceed. <b></b>", 'data-method'=>'post', 'class'=>'btn btn-danger','title'=>'Delete Package','data-pjax'=>'0']);
                         } else {
                             return null;
                         }
                     },
                     'view' => function ($url, $model) use ($requeststatus) {
-                        return ($requeststatus > 0 && $model->is_package_name == 0) ? Html::button('<span class="glyphicon glyphicon-eye-open"></span>', ['value'=>Url::to(['/lab/analysisreferral/view','id'=>$model->analysis_id]), 'onclick'=>'viewAnalysisReferral(this.value,this.title)', 'class' => 'btn btn-primary','title' => 'View Analysis']) : null;
+                        return ($requeststatus > 0 && $model->is_package == 0) ? Html::button('<span class="glyphicon glyphicon-eye-open"></span>', ['value'=>Url::to(['/lab/analysisreferral/view','id'=>$model->analysis_id]), 'onclick'=>'viewAnalysisReferral(this.value,this.title)', 'class' => 'btn btn-primary','title' => 'View Analysis']) : null;
                     },
                 ],
             ],
@@ -610,13 +611,18 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                 'panel' => [
                     'heading'=>'<h3 class="panel-title">Analysis</h3>',
                     'type'=>'primary',
-                    'before'=>($requeststatus > 0 && $notified == 0 && $hasTestingAgency == 0 && trim($model->request_ref_num) == "") ? Html::button('<i class="glyphicon glyphicon-plus"></i> Add Analysis', ['disabled'=>$enableRequest,'value' => $model->request_type_id == 2 ? Url::to(['analysisreferral/create','request_id'=>$model->request_id]) : "",'title'=>'Add Analyses', 'onclick'=> $model->request_type_id == 2 ? $ClickButtonAnalysisReferral : "", 'class' => 'btn btn-success','id' => 'btn_add_analysis'])."   ".
-                    Html::button('<i class="glyphicon glyphicon-plus"></i> Add Package', ['disabled'=>$enablePackage,'value' => $model->discount > 0 ? '' : Url::to(['analysisreferral/package','request_id'=>$model->request_id]),'title'=>'Add Package', 'onclick'=>$model->discount > 0 ? 'BootstrapDialog.alert({type:BootstrapDialog.TYPE_DANGER,title:"Warning",message:"Add package not allowed for request with discount!"})' : $ClickButtonAnalysisReferral, 'class' => 'btn btn-success','id' => 'btn_add_package']) : null,
+                    'before'=>empty($model->pstc_id) && empty($model->pstc_request_id) ? (($requeststatus > 0 && $notified == 0 && $hasTestingAgency == 0 && trim($model->request_ref_num) == "") ? Html::button('<i class="glyphicon glyphicon-plus"></i> Add Analysis', ['disabled'=>$enableRequest,'value' => $model->request_type_id == 2 ? Url::to(['analysisreferral/create','request_id'=>$model->request_id]) : "",'title'=>'Add Analyses', 'onclick'=> $model->request_type_id == 2 ? $ClickButtonAnalysisReferral : "", 'class' => 'btn btn-success','id' => 'btn_add_analysis'])."   ".
+                    Html::button('<i class="glyphicon glyphicon-plus"></i> Add Package', ['disabled'=>$enablePackage,'value' => $model->discount > 0 ? '' : Url::to(['analysisreferral/package','request_id'=>$model->request_id]),'title'=>'Add Package', 'onclick'=>$model->discount > 0 ? 'BootstrapDialog.alert({type:BootstrapDialog.TYPE_DANGER,title:"Warning",message:"Add package not allowed for request with discount!"})' : $ClickButtonAnalysisReferral, 'class' => 'btn btn-success','id' => 'btn_add_package']) : null) : '',
                    'after'=>false,
                    'footer'=>(($model->request_type_id == 2 && $notified == 1 && $hasTestingAgency > 0 && trim($model->request_ref_num) != "") || $checkTesting == 1) ? "<div class='row' style='margin-left: 2px;padding-top: 5px'>".$EnablePrint."</div>" : null,
                 ],
                 'columns' => $analysisgridColumns,
                 'toolbar' => [
+                    'content'=> Html::a('<i class="glyphicon glyphicon-repeat"></i> Refresh Grid', [Url::to(['request/view','id'=>$model->request_id])], [
+                                'class' => 'btn btn-default', 
+                                'title' => 'Refresh Grid'
+                            ]),
+                    //'{toggleData}',
                 ],
             ]);
         ?>
@@ -650,7 +656,6 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                     ],
                 ],
                 [
-                    //'attribute'=>'description',
                     'attribute'=>'agency_id',
                     'format' => 'raw',
                     'header' => 'Estimated due date',
@@ -682,7 +687,6 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                             if($model->status_id > 0) {
                                 switch ($checkNotify) {
                                     case 0:
-                                        //alert('Not valid request!');
                                         if($checkActive != 1)
                                         {
                                             return 'Lab not active.';
@@ -897,11 +901,10 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
                     'striped'=>true,
                     'hover'=>true,
                     'panel' => [
-                        'heading'=>'<h3 class="panel-title">Bidding</h3>',
+                        'heading'=>'<h3 class="panel-title">Bidder</h3>',
                         'type'=>'primary',
-                        //'before'=>Html::button('<i class="glyphicon glyphicon-plus"></i> Add Sample', ['disabled'=>$enableRequest, 'value' => Url::to(['sample/create','request_id'=>$model->request_id]),'title'=>'Add Sample', 'onclick'=>'addSample(this.value,this.title)', 'class' => 'btn btn-success','id' => 'modalBtn'])." ".Html::button('<i class="glyphicon glyphicon-print"></i> Print Label', ['disabled'=>!$enableRequest, 'onclick'=>"window.location.href = '" . \Yii::$app->urlManager->createUrl(['/reports/preview?url=/lab/request/printlabel','request_id'=>$model->request_id]) . "';" ,'title'=>'Print Label',  'class' => 'btn btn-success']),
+
                         'before'=>'<p class="text-primary"><strong>Note:</strong> Agency who participated the bidding.</p>',
-                        //'before' => Html::button('<span class="glyphicon glyphicon-share"></span> Open for Bidding', ['value'=>Url::toRoute(['/referrals/bid/open','request_id'=>$model->request_id]), 'onclick'=>'openBidding(this.value,this.title)', 'class' => 'btn btn-success','title' => 'Open for Bidding']),
                         'after'=>false,
                     ],
                     'columns' => $biddingGridColumns,
@@ -1121,6 +1124,8 @@ if($requeststatus > 0 && $notified == 1 && $hasTestingAgency > 0 && !empty($mode
     }
 
     function getSamplecode(url,title){
+        var _replace = "<div style='text-align:center;'><img src='/images/img-loader64.gif' alt=''></div>";
+        $('#modalContent').html(_replace);
         $('.modal-title').html(title);
         $('#modal').modal('show')
            .find('#modalContent')

@@ -751,7 +751,7 @@ return array (
     'version' => '1.2.2.0',
     'alias' => 
     array (
-      '@kartik/money' => $vendorDir . '/kartik-v/yii2-money',
+      '@kartik/money' => $vendorDir . '/kartik-v/yii2-money/src',
     ),
   ),
   'kartik-v/yii2-sortable' => 

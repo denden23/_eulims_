@@ -105,6 +105,45 @@ class MethodreferenceController extends Controller
        }
     }
 
+
+        /**
+     * Creates a new Methodreference model.
+     * If creation is successful, the browser will be redirected to the 'testnamemethod/index' page.
+     /*
+        Created By: Bergel T. Cutara
+        Contacts:
+
+        Email: b.cutara@gmail.com
+        Tel. Phone: (062) 991-1024
+        Mobile Phone: (639) 956200353
+
+        Description: This action is performed by the testnamemethod.
+     * @return mixed
+     */
+    public function actionCreatebytestnamemethod()
+    {
+        $model = new Methodreference();
+        $model->testname_id = 0;
+        $post= Yii::$app->request->post();
+        if ($model->load(Yii::$app->request->post())) {
+            $methodreference = Methodreference::find()->where(['method'=> $post['Methodreference']['method'], 'reference'=> $post['Methodreference']['reference'], 'fee'=> $post['Methodreference']['fee']])->one();
+            if ($methodreference){
+                return $this->redirect(['/lab/testnamemethod']);
+            }else{
+                $model->save();
+                return $this->redirect(['/lab/testnamemethod']);
+            }
+        }
+        $model->create_time=date("Y-m-d h:i:s");
+        $model->update_time=date("Y-m-d h:i:s");
+        if(Yii::$app->request->isAjax){
+            return $this->renderAjax('_form', [
+                'model' => $model,
+            ]);
+       }
+    }
+
+
     public function actionCreatemethod()
     {
         $model = new Methodreference();

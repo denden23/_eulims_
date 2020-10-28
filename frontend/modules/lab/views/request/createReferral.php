@@ -17,6 +17,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'discountreferral' => $discountreferral,
         'purposereferral' => $purposereferral,
         'modereleasereferral' => $modereleasereferral,
+        'api_url'=>$api_url
     ]) ?>
 
 </div>

@@ -105,13 +105,12 @@ $this->registerJs($js);
         ],
     ]); ?>
 
-
     <?php
-            $requestquery = Request::find()->where(['request_id' => 2])->one();
+            $requestquery = Request::find()->where(['request_id' => $request_id])->one();
         
             $category= ArrayHelper::map(Testcategory::find()
             ->leftJoin('tbl_lab_sampletype', 'tbl_lab_sampletype.testcategory_id=tbl_testcategory.testcategory_id')
-            ->Where(['tbl_lab_sampletype.lab_id'=>1])
+            ->Where(['tbl_lab_sampletype.lab_id'=>$labId])
             ->orderBy(['testcategory_id' => SORT_DESC])->all(),'testcategory_id','category');
         ?>
 
@@ -119,20 +118,11 @@ $this->registerJs($js);
         <?= Html::textInput('lab_id', $requestquery->lab_id, ['class' => 'form-control', 'id'=>'lab_id', 'type'=>'hidden'], ['readonly' => true]) ?>
         <!-- error here-->
 
-        <?= $form->field($model,'package_id')->widget(Select2::classname(),[
-                        'data' => $category,
-                        'theme' => Select2::THEME_KRAJEE,
-                        'options' => ['id'=>'sample-category_id'],
-                        'pluginOptions' => ['allowClear' => true,'placeholder' => 'Select Test Category'],
-                ])->label("Test Category")
-        ?>
-
-
 
          <div class="row">
          <div class="col-sm-6">
                 <?= $form->field($model,'sample_type_id')->widget(Select2::classname(),[
-                            'data' => $testcategory,
+                            'data' =>ArrayHelper::map(Sampletype::find()->where(['status_id'=>1])->all(),'sampletype_id','type'),
                             'theme' => Select2::THEME_KRAJEE,
                             'options' => ['id'=>'sample-testcategory_id'],
                             'pluginOptions' => ['allowClear' => true,'placeholder' => 'Select Sample Type'],

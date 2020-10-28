@@ -12,7 +12,7 @@ use yii\widgets\ActiveForm;
 <br>
 
 
-<div class="row">
+<!-- <div class="row">
 
         <div class="col-sm-3">  
                 
@@ -26,7 +26,7 @@ use yii\widgets\ActiveForm;
         <div class="col-sm-3">       
         </div>
 </div>
-<br>
+<br> -->
 
 <div class="row">
         <div class="col-sm-4">       

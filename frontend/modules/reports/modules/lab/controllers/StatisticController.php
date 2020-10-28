@@ -7,7 +7,7 @@ use yii\web\Controller;
 use common\models\lab\Sample;
 use common\models\lab\Customer;
 use common\models\lab\Request;
-use frontend\modules\reports\modules\models\Requestextend;
+use frontend\modules\reports\modules\models\Requestextension;
 use frontend\modules\reports\modules\models\Customerextend;
 use common\models\lab\Lab;
 use common\models\lab\Businessnature;
@@ -28,65 +28,97 @@ class StatisticController extends Controller
 
     public function actionSamples()
     {
-    	$model = new Requestextend;
-        $rstlId = Yii::$app->user->identity->profile->rstl_id;
+        
+        set_time_limit(0);
+    	$model = new Requestextension;
+    	$rstlId = Yii::$app->user->identity->profile->rstl_id;
+    	
 		if (Yii::$app->request->get())
 		{
 			$labId = (int) Yii::$app->request->get('lab_id');
+			$year = (int) Yii::$app->request->get('year');
 			
-			if($this->checkValidDate(Yii::$app->request->get('from_date')) == true)
-			{
-		        $fromDate = Yii::$app->request->get('from_date');
-			} else {
-				$fromDate = date('Y-m-d');
-				Yii::$app->session->setFlash('error', "Not a valid date!");
-			}
-
-			if($this->checkValidDate(Yii::$app->request->get('to_date')) == true){
-				$toDate = Yii::$app->request->get('to_date');
-			} else {
-				$toDate = date('Y-m-d');
-				Yii::$app->session->setFlash('error', "Not a valid date!");
-			}
 		} else {
 			$labId = 1;
-			$fromDate = date('Y-m-01'); //first day of the month
-			$toDate = date('Y-m-d'); //as of today
+			$year = date('Y'); //current year
 		}
 
-		$modelRequest = Requestextend::find()
-					->where('rstl_id =:rstlId AND status_id > :statusId AND lab_id = :labId AND DATE_FORMAT(`request_datetime`, "%Y-%m-%d") BETWEEN :fromRequestDate AND :toRequestDate', [':rstlId'=>$rstlId,':statusId'=>0,':labId'=>$labId,':fromRequestDate'=>$fromDate,':toRequestDate'=>$toDate])
-					->groupBy(['DATE_FORMAT(request_datetime, "%Y-%m-%d")'])
-					->orderBy('request_datetime DESC');
+		$modelRequest = Requestextension::find()
+		->select([
+			'monthnum'=>'DATE_FORMAT(`request_datetime`, "%m")',
+			'month'=>'DATE_FORMAT(`request_datetime`, "%M")',
+			'totalrequests' => 'count(request_id)',
+			'total'=>'SUM(total)',
+			'request_datetime',
+		])
+		->where('rstl_id =:rstlId AND status_id > :statusId AND lab_id = :labId AND DATE_FORMAT(`request_datetime`, "%Y") = :year AND request_ref_num != ""', [':rstlId'=>$rstlId,':statusId'=>0,':labId'=>$labId,':year'=>$year])
+		->groupBy(['DATE_FORMAT(request_datetime, "%Y-%m")'])
+		->orderBy('request_datetime ASC');
 
+         
 		$dataProvider = new ActiveDataProvider([
-            'query' =>$modelRequest,
+            'query' => $modelRequest,
             'pagination' => false,
-            /*'pagination' => [
-                'pagesize' => 5,
-            ],*/
         ]);
 
         if (Yii::$app->request->isAjax) {
             return $this->renderAjax('samplestat', [
                 'dataProvider' => $dataProvider,
                 'lab_id' => $labId,
-                'from_date' => $fromDate,
-                'to_date' => $toDate,
+                'year' => $year,
                 'model'=>$modelRequest,
 	            'laboratories' => $this->listLaboratory(),
             ]);
         } else {
 			return $this->render('samplestat', [
-	            //'searchModel' => $searchModel,
 	            'dataProvider' => $dataProvider,
 	            'lab_id' => $labId,
 	            'model'=>$modelRequest,
-                'from_date' => $fromDate,
-                'to_date' => $toDate,
+                'year' => $year,
 	            'laboratories' => $this->listLaboratory(),
 	        ]);
 		}
+
+        //return $this->render('index');
+    }
+    
+
+    public function actionDaily(){
+
+        if (Yii::$app->request->post())
+		{
+			$lab = (int) Yii::$app->request->post('lab_id');
+			$date = Yii::$app->request->post('today');
+			
+		} else {
+            $lab = 1; $date =  date("Y-m-d");
+        }
+
+        $request = Requestextension::countTables($date,$lab,'request');
+        $samples = Requestextension::countTables($date,$lab,'samples');
+        $analysis = Requestextension::countTables($date,$lab,'analysisdaily');
+
+        if (Yii::$app->request->post())
+		{
+            $response = array(
+                "status" => 200,
+                "request" => $request,
+                "sample" => $samples,
+                "analysis" => $analysis
+            );
+   
+            return json_encode($response);
+        }else{ 
+            return $this->render('samples-daily', [
+                'lab' => $lab,
+                'request' => $request,
+                'sample' => $samples,
+                'analysis' => $analysis,
+                'date' => $date,
+                'laboratories' => $this->listLaboratory(),
+            ]);
+        }
+
     }
 
     public function actionCustomers()

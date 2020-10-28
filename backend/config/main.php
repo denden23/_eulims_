@@ -22,6 +22,7 @@ return [
             'identityClass' => 'common\models\system\User',
             'enableAutoLogin' => true,
             'identityCookie' => ['name' => '_identity-backend', 'httpOnly' => true],
+
         ],
         'maintenanceMode' => [
             // Component class namespace
@@ -90,13 +91,14 @@ return [
             'showScriptName' => false,
             'rules'=>require(__DIR__.'/_routes.php') // Load routes from PHP File
         ],
+        'authManager' => [
+            'class' => 'yii\rbac\DbManager', // or use 'yii\rbac\DbManager'
+        ]
     ],
     'as access' => [
-        //'class' => 'mdm\admin\components\AccessControl',
-        'class' => 'common\modules\admin\components\AccessControl',
+        'class' => 'mdm\admin\components\AccessControl',
         'allowActions' => [
-            'site/*',
-            '/admin/user/signup'
+            'site/logout',
         ]
     ],
     'params' => $params,

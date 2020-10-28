@@ -88,11 +88,11 @@ $requestlist= ArrayHelper::map(Businessnature::find()->orderBy(['nature' => SORT
                 <div class="panel panel-info">
                 <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;"><b>Legends</b></div>
                     <div class="panel-body">
-                    <?php echo Html::button($legend_extremely_satisfied, [ 'class' => 'd_deliverytime', 'value'=>'5', 'style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?> 
-                    <?php echo Html::button($legend_satisfied, ['class' => 'd_deliverytime', 'value'=>'4', 'style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?>                 
-                    <?php echo Html::button($legend_neutral, [ 'class' => 'd_deliverytime', 'value'=>'3', 'style'=>'background-color: #F5DEB3 !important'.$btn_style]).$space ?>
-                    <?php echo Html::button($legend_unsatisfied, ['class' => 'd_deliverytime', 'value'=>'2', 'style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?>
-                    <?php echo Html::button($legend_extremely_unsatisfied, [ 'class' => 'd_deliverytime','value'=>'1', 'style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?>           
+                    <?php echo Html::button($legend_extremely_satisfied, [ 'style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?> 
+                    <?php echo Html::button($legend_satisfied, [ 'style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?>                 
+                    <?php echo Html::button($legend_neutral, [  'style'=>'background-color: #F5DEB3 !important'.$btn_style]).$space ?>
+                    <?php echo Html::button($legend_unsatisfied, ['style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?>
+                    <?php echo Html::button($legend_extremely_unsatisfied, ['style'=>'background-color: #F5DEB3 !important;'.$btn_style]).$space ?>           
                    
                        
                       

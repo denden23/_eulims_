@@ -8,8 +8,8 @@ use yii\web\JsExpression;
 /* @var $searchModel common\models\lab\BookingSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
-$this->title = 'Manage Booking';
-$this->params['breadcrumbs'][] = ['label' => 'Booking', 'url' => ['/lab/booking']];
+$this->title = 'Booking';
+$this->params['breadcrumbs'][] = ['label' => 'Manage Booking', 'url' => ['/lab/booking/manage']];
 $this->params['breadcrumbs'][] = $this->title;
 
 $DragJS = <<<EOF
@@ -82,7 +82,7 @@ function(calEvent, jsEvent, view) {
     // change the border color just for fun
     // $(this).css('border-color', 'red');
 
-    window.open( "/inventory/equipmentservice/update?id=" + calEvent.id, "_blank", "" );
+    window.open( "/lab/booking/view?id=" + calEvent.id, "_blank", "" );
 }
 EOF;
 
@@ -91,18 +91,14 @@ EOF;
 
     <?= Html::button('<span class="glyphicon glyphicon-plus"></span> Create Booking', ['value'=>'/lab/booking/create', 'class' => 'btn btn-success','title' => Yii::t('app', "Booking"),'id'=>'btnBooking','onclick'=>'addBooking(this.value,this.title)'])?>
     
-  <?php $rstl_id= Yii::$app->user->identity->profile->rstl_id;?>  
+  <?php $rstl_id= 11; //default 11, just get all from the db, let the db set the defualt rstlid to 11?>  
 
    <?= \yii2fullcalendar\yii2fullcalendar::widget(array(
           'events'=> Url::to(["/lab/booking/jsoncalendar?id=$rstl_id"]),
           'clientOptions' => [
-                        'selectable' => true,
                         'selectHelper' => true,
-                        'droppable' => true,
                         'editable' => true,
                         'height'=>500,
-                        // 'select' => new JsExpression($JSCode),
-                        // 'drop' => new JsExpression($JSDropEvent),
                         'eventClick' => new JsExpression($JSEventClick),
                         // 'dayClick'=>new \yii\web\JsExpression($JSDayClick),
                         'defaultDate' => date('Y-m-d')

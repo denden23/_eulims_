@@ -15,7 +15,8 @@ $this->params['breadcrumbs'][] = $this->title;
         'model' => $model,
         'Req_id'=> $Req_id,
         'HasOP'=>$HasOP,
-        'HasReceipt'=>$HasReceipt
+        'request'=>$request,
+        'UserCancel'=>$UserCancel
     ]) ?>
 
 </div>

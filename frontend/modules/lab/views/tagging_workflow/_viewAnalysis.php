@@ -159,7 +159,8 @@ $this->registerJs($js);
                                 {
                                 $profile= Profile::find()->where(['user_id'=> $tagging->user_id])->one();
                                     if ($profile){
-                                        return $profile->firstname.' '. strtoupper(substr($profile->middleinitial,0,1)).'. '.$profile->lastname;
+                                        //return $profile->firstname.' '. strtoupper(substr($profile->middleinitial,0,1)).'. '.$profile->lastname;
+                                        return $profile->fullname;
                                     }else{
                                         return '';
                                     }

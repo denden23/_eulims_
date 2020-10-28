@@ -71,7 +71,8 @@ class Testreportconfig extends \yii\db\ActiveRecord
         $Connection= Yii::$app->labdb;
         $series=$func->ExecuteStoredProcedureOne("spGetTestConfigSeries(:mLabID)", [':mLabID'=> $this->lab_id], $Connection);
         //Yii::$app->response->format= \yii\web\Response::FORMAT_JSON;
-        return $series['number'];
+        // return $series['number'];
+        return (string) sprintf("%04d", $series['number']);
     }
 
     public function setTestReportSeries(){

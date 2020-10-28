@@ -7,11 +7,6 @@
  * Module: _fixed_module * 
  */
 return [
-    'admin' => [
-        'class' => 'common\modules\admin\Module',
-        //'class' => 'common\mdm\admin\Module',
-        //'class' => 'mdm\admin\Module',
-    ], 
     'imagemanager' => [
         'class' => 'noam148\imagemanager\Module',
         //set accces rules ()

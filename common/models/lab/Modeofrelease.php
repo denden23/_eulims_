@@ -3,6 +3,7 @@
 namespace common\models\lab;
 
 use Yii;
+use common\models\lab\Booking;
 
 /**
  * This is the model class for table "tbl_modeofrelease".
@@ -61,5 +62,9 @@ class Modeofrelease extends \yii\db\ActiveRecord
     public function getRequests()
     {
         return $this->hasMany(Request::className(), ['modeofrelease_id' => 'modeofrelease_id']);
+    }
+        public function getModeofrelease()
+    {
+        return $this->hasOne(Booking::className(), ['modeofrelease_ids' => 'modeofrelease_id']);
     }
 }

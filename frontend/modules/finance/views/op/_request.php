@@ -196,7 +196,7 @@ $this->registerJs($js);
         else{
              $.post({
             url: 'save-paymentitem?request_ids='+ids+'&opid=<?php echo $opid ?>', // your controller action
-            dataType: 'json',
+      
             success: function(data) {
                location.reload();
             }

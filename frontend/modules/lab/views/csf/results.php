@@ -9,145 +9,55 @@ use yii\helpers\ArrayHelper;
 use yii\bootstrap\Modal;
 use yii\helpers\Url;
 
+
+
+use kartik\grid\Module;
+use kartik\daterange\DateRangePicker;
+use yii\widgets\ActiveForm;
+use kartik\widgets\Select2;
+use kartik\export\ExportMenu;
+use kartik\grid\DataColumn;
+
 /* @var $this yii\web\View */
 /* @var $searchModel common\models\lab\DocumentcontrolSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 $this->title = 'Customer Satisfaction Feedback Survey';
 $this->params['breadcrumbs'][] = $this->title;
-
 $lablist= ArrayHelper::map(Lab::find()->all(),'lab_id','labname');
 $tomlist= ArrayHelper::map(Markettype::find()->all(),'id','type');
-
+$month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+$year = ['2019'];
 ?>
 
+<?php $form = ActiveForm::begin(); ?>  
+   <div>
+       <?php 
+     echo   $sampletype = "<div class='row'><div class='col-md-2'  style='margin-left:15px'>".$form->field($model,'r_date')->widget(Select2::classname(),[
+                       'data' => $month,
+                       'id'=>'month',
+                       'theme' => Select2::THEME_KRAJEE,
+                       'options' => ['id'=>'month'],
+                       'pluginOptions' => ['allowClear' => true,'placeholder' => 'Select Month'],
+               ])->label("Month")."</div>"."<div class='col-md-2'>".$form->field($model,'essay')->widget(Select2::classname(),[
+                   'data' => $year,
+                   'id'=>'year',
+                   'theme' => Select2::THEME_KRAJEE,
+                   'options' => ['id'=>'year'],
+                   'pluginOptions' => ['allowClear' => true,'placeholder' => 'Select Year'],
+           ])->label("Year")."</div><div><br><span class='btn btn-success'onclick='monthlyreport()'>Generate</span></div>";
+
+          
+       ?>
+   </div>
+<?php ActiveForm::end(); ?>	
+		  
  
-
-<div class="row">
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>JAN</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>FEB</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>MAR</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>APR</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>MAY</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>JUN</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>JUL</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>AUG</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>SEP</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>OCT</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>NOV</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-
-        <div class="col-sm-1">     
-                <div class="panel panel-info">
-                <div class="panel-heading" style="color:#142142;font-family:Century Gothic;font-size:130%;text-align:center"><b>DEC</div>
-                <div class="panel-body" style="text-align:center;font-size:180%">
-                94.43%
-                </div>
-            </div>
-        </div>
-
-
-      
-</div>
 <?php $this->registerJsFile("/js/services/services.js"); ?>
 <div class="customer_satisfaction_feedback-index">
 
    
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
-   
-    <?= GridView::widget([
+    <?php echo  GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'pjax' => true,
@@ -228,3 +138,24 @@ $tomlist= ArrayHelper::map(Markettype::find()->all(),'id','type');
         ],
     ]); ?>
 </div>
+
+
+<script type="text/javascript">
+   function monthlyreport() {
+
+         jQuery.ajax( {
+            type: 'GET',
+            url: 'monthlyreport',
+            data: { month: $('#select2-month-container').attr('title'), year: $('#select2-year-container').attr('title')},
+            success: function (response) {
+                 $("#xyz").html(response);
+                 $(".modal").modal('hide');
+               },
+            error: function ( xhr, ajaxOptions, thrownError ) {
+                alert( thrownError );
+            }
+        });
+    }
+
+</script>
+

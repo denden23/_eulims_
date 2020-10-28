@@ -18,7 +18,7 @@ class ProductsSearch extends Products
     public function rules()
     {
         return [
-            [['product_id', 'qty_reorder','categorytype_id', 'qty_onhand', 'qty_min_reorder', 'discontinued', 'created_by', 'created_at', 'updated_at'], 'integer'],
+            [['product_id', 'qty_reorder','categorytype_id', 'qty_onhand', 'qty_min_reorder', 'discontinued', 'created_by', 'created_at', 'updated_at','producttype_id'], 'integer'],
             [['product_code', 'product_name', 'description', 'unit', 'suppliers_ids'], 'safe'],
             [['price', 'srp'], 'number'],
         ];
@@ -42,7 +42,7 @@ class ProductsSearch extends Products
      */
     public function search($params)
     {
-        $query = Products::find()->orderBy(['product_code' => SORT_ASC]);
+        $query = Products::find()->orderBy(['product_code' => SORT_ASC])->where(['rstl_id'=>Yii::$app->user->identity->profile->rstl_id]);
 
         // add conditions that should always apply here
 
@@ -64,6 +64,7 @@ class ProductsSearch extends Products
             'price' => $this->price,
             'srp' => $this->srp,
             'categorytype_id' => $this->categorytype_id,
+            'producttype_id' => $this->producttype_id,
             'qty_reorder' => $this->qty_reorder,
             'qty_onhand' => $this->qty_onhand,
             'qty_min_reorder' => $this->qty_min_reorder,

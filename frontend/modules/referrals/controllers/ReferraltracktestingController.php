@@ -78,6 +78,7 @@ class ReferraltracktestingController extends Controller
             
             $testingData = Json::encode(['data'=>$model]);
             $testingUrl ='https://eulimsapi.onelab.ph/api/web/referral/referraltracktestings/insertdata';
+            //$testingUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/referraltracktestings/insertdata';
 
             $curlTesting = new Curl();
             $testingResponse = $curlTesting->setRequestBody($testingData)
@@ -92,6 +93,7 @@ class ReferraltracktestingController extends Controller
                         $accepted=['referralid'=>$referralid,'statusid'=>3];
                         $acceptedData = Json::encode(['data'=>$accepted]);
                         $acceptedUrl ='https://eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
+                        //$acceptedUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
 
                         $curlTesting = new Curl();
                         $acceptedResponse = $curlTesting->setRequestBody($acceptedData)
@@ -107,6 +109,7 @@ class ReferraltracktestingController extends Controller
                             $ongoing=['referralid'=>$referralid,'statusid'=>4];
                             $ongoingData = Json::encode(['data'=>$ongoing]);
                             $ongoingUrl ='https://eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
+                            //$ongoingUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
 
                             $curlTesting = new Curl();
                             $ongoingResponse = $curlTesting->setRequestBody($ongoingData)
@@ -123,6 +126,7 @@ class ReferraltracktestingController extends Controller
                             
                             $completedData = Json::encode(['data'=>$completed]);
                             $completedUrl ='https://eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
+                            //$completedUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
 
                             $curlTesting = new Curl();
                             $completedResponse = $curlTesting->setRequestBody($completedData)
@@ -173,6 +177,7 @@ class ReferraltracktestingController extends Controller
         if ($model->load(Yii::$app->request->post())) {
             $testingData = Json::encode(['data'=>$model]);
             $testingUrl ='https://eulimsapi.onelab.ph/api/web/referral/referraltracktestings/updatedata';
+            //$testingUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/referraltracktestings/updatedata';
 
             $curlTesting = new Curl();
             $testingResponse = $curlTesting->setRequestBody($testingData)
@@ -188,6 +193,7 @@ class ReferraltracktestingController extends Controller
                         $ongoing=['referralid'=>$refid,'statusid'=>4];
                         $ongoingData = Json::encode(['data'=>$ongoing]);
                         $ongoingUrl ='https://eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
+                        //$ongoingUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
 
                         $curlTesting = new Curl();
                         $ongoingResponse = $curlTesting->setRequestBody($ongoingData)
@@ -204,6 +210,7 @@ class ReferraltracktestingController extends Controller
 
                         $completedData = Json::encode(['data'=>$completed]);
                         $completedUrl ='https://eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
+                        //$completedUrl ='http://localhost/eulimsapi.onelab.ph/api/web/referral/statuslogs/insertdata';
 
                         $curlTesting = new Curl();
                         $completedResponse = $curlTesting->setRequestBody($completedData)

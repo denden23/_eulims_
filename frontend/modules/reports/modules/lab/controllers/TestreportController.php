@@ -49,7 +49,8 @@ class TestreportController extends Controller
     {
         $searchModel = new TestreportSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
+        
+        $dataProvider->sort->defaultOrder = ['testreport_id' => SORT_DESC];
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -297,7 +298,7 @@ class TestreportController extends Controller
     public function actionGetlistsamples($id)
     {
         $model= new Sample();
-        $query = Sample::find()->where(['request_id' => $id]);
+        $query = Sample::find()->where(['request_id' => $id,'active'=> 1]); //need to get the active samples only
         
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

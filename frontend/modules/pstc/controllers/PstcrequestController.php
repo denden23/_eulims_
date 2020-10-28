@@ -19,6 +19,7 @@ use common\models\lab\Labsampletype;
 use common\models\lab\Sampletype;
 use common\models\lab\Testcategory;
 use common\models\lab\Lab;
+use common\models\lab\Referralrequest;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -191,6 +192,7 @@ class PstcrequestController extends Controller
             $respond = $details['respond_data'];
             $pstc = $details['pstc_data'];
             $customer = $details['customer_data'];
+            $attachment = $details['attachment_data'];
             $subtotal = $details['subtotal'];
             $discount = $details['discount'];
             $total = $details['total'];
@@ -203,6 +205,11 @@ class PstcrequestController extends Controller
             $analysisDataprovider = new ArrayDataProvider([
                 'allModels' => $analyses,
                 'pagination'=>false,
+            ]);
+
+            $attachmentDataprovider = new ArrayDataProvider([
+                'allModels' => $attachment,
+                'pagination' => false,
             ]);
            
             //$query = new Query;
@@ -223,6 +230,7 @@ class PstcrequestController extends Controller
                 //'sample' => $samples,
                 'sampleDataProvider' => $sampleDataProvider,
                 'analysisDataprovider'=> $analysisDataprovider,
+                'attachmentDataprovider'=> $attachmentDataprovider,
                 'respond' => $respond,
                 'pstc' => $pstc,
                 'subtotal' => $subtotal,
@@ -233,7 +241,7 @@ class PstcrequestController extends Controller
             ]);
         } else {
             Yii::$app->session->setFlash('error', "Invalid request!");
-            return $this->redirect(['/pstc/pstcrequest']);
+            return $this->redirect(['/pstc/pstcrequest/accepted']);
         }
     }
 
@@ -420,16 +428,22 @@ class PstcrequestController extends Controller
 
         //if (Yii::$app->request->post()) {
         //if ($model->load(Yii::$app->request->post()) && $model->save()) {
-        if ($model->load(Yii::$app->request->post())) {
+        if ($model->load(Yii::$app->request->post()) && count($analyses) >= count($samples)) {
             $post = Yii::$app->request->post('eRequest');
             $total_fee = $total - ($subtotal * ($post['discount']/100));
 
             $model->modeofrelease_ids = implode(",", $post['modeofreleaseids']);
             $model->total = $total_fee;
             $model->pstc_request_id = $requestId;
+            $model->request_datetime = date('Y-m-d H:i:s');
             $model->created_at = date('Y-m-d H:i:s');
             $model->rstl_id = $rstlId;
+            $model->customer_id = $request['customer_id'];
+            $model->pstc_id = $pstcId;
 
+            $sampleSave = 0;
+            $analysisSave = 0;
+			$requestSave = 0;
             if($model->save(false)) {
                 $local_requestId = $model->request_id;
                 $psct_requestdetails = json_decode($function->getRequestDetails($requestId,$rstlId,$pstcId),true);
@@ -448,11 +462,14 @@ class PstcrequestController extends Controller
                     //$modelSample->sampletype_id = 0; //pstc request, sample type id is in analysis
                     $modelSample->samplename = $sample['sample_name'];
                     $modelSample->description = $sample['sample_description'];
+                    $modelSample->customer_description = $sample['customer_description'];
                     // $modelSample->sampling_date = $sample['sampling_date']; //to be updated
-                    $modelSample->sampling_date = date('Y-m-d H:i:s'); //to be updated
+                    $modelSample->sampling_date = empty($sample['sampling_date']) ? date('Y-m-d H:i:s') : date('Y-m-d H:i:s',strtotime($sample['sampling_date'])); //to be updated
                     $modelSample->pstcsample_id = $sample['pstc_sample_id'];
-                    $modelSample->testcategory_id = $post['testcategory_id'];
-                    $modelSample->sampletype_id = $post['sampletype_id'];
+                    //$modelSample->testcategory_id = $post['testcategory_id'];
+                    //$modelSample->sampletype_id = $post['sampletype_id'];
+                    $modelSample->testcategory_id = $sample['testcategory_id'];
+                    $modelSample->sampletype_id = $sample['sampletype_id'];
 
                     if($modelSample->save(false)) {
                         foreach ($sample['analyses'] as $analysis) {
@@ -469,9 +486,9 @@ class PstcrequestController extends Controller
                             $modelAnalysis->methodref_id = $analysis['method_id'];
                             $modelAnalysis->method = $analysis['method'];
                             $modelAnalysis->references = $analysis['reference'];
-                            $modelAnalysis->fee =$analysis['fee'];
-                            $modelAnalysis->testcategory_id = $post['testcategory_id'];
-                            $modelAnalysis->sample_type_id = $post['sampletype_id'];
+                            $modelAnalysis->fee = $analysis['fee'];
+                            $modelAnalysis->testcategory_id = $analysis['testcategory_id'];
+                            $modelAnalysis->sample_type_id = $analysis['sampletype_id'];
                             $modelAnalysis->is_package = $analysis['is_package'];
                             $modelAnalysis->is_package_name = $analysis['is_package_name'];
                             $modelAnalysis->quantity = 1;
@@ -489,7 +506,9 @@ class PstcrequestController extends Controller
                     }
                 }
 
-                if($sampleSave == 1 && $analysisSave == 1) {
+                $requestSave = 1;
+
+                if($sampleSave == 1 && $analysisSave == 1 && $requestSave == 1) {
                     //$transaction->commit();
                     //if($transaction->commit()) {
                     //if($generate_code == 'success') {
@@ -498,6 +517,7 @@ class PstcrequestController extends Controller
                         //$samplecode = $func->GenerateSampleCode($local_requestId);
                         //print_r($generate_code);
                         //exit;
+                    //if($generate_code == 'success') {
                         $sample_data = [];
                         $analysis_data = [];
                         if($generate_code == "success") {
@@ -509,61 +529,66 @@ class PstcrequestController extends Controller
                                 'pstc_request_id' => $local_request->pstc_request_id,
                                 'request_ref_num' => $local_request->request_ref_num,
                                 'rstl_id' => $local_request->rstl_id,
-                                'pstc_id' => $pstcId,
+                                'pstc_id' => $local_request->pstc_id,
+                                'customer_id' => $local_request->customer_id,
                                 'local_request_id' => $local_request->request_id,
                                 'request_date_created' => $local_request->request_datetime,
                                 'estimated_due_date' => $local_request->report_due,
                                 'lab_id' => $local_request->lab_id,
-                                'discount_id' => $local_request->discount_id,
+                                'discount_id' => (int) $local_request->discount_id,
                                 'discount_rate' => $local_request->discount,
                             ];
 
-                            foreach ($local_samples as $data) {
+                            foreach ($local_samples as $s_data) {
                                 $sampleData = [
-                                    'sample_id' => $data['pstcsample_id'],
-                                    'sample_code' => $data['sample_code'],
-                                    'sample_month' => $data['sample_month'],
-                                    'sample_year' => $data['sample_year'],
+                                    'pstc_sample_id' => $s_data['pstcsample_id'],
+                                    'sample_code' => $s_data['sample_code'],
+                                    'sample_month' => $s_data['sample_month'],
+                                    'sample_year' => $s_data['sample_year'],
                                     'rstl_id' => $local_request->rstl_id,
                                     'pstc_id' => $pstcId,
-                                    'sample_description' => $data['description'],
-                                    'sample_name' => $data['samplename'],
-                                    'local_sample_id' => $data['sample_id'],
+                                    'sample_description' => $s_data['description'],
+                                    'customer_description' => $s_data['customer_description'],
+                                    'sample_name' => $s_data['samplename'],
+                                    'local_sample_id' => $s_data['sample_id'],
                                     'local_request_id' => $local_requestId,
-                                    'sampletype_id' => $data['sampletype_id'],
-                                    'testcategory_id' => $data['testcategory_id'],
+                                    'sampletype_id' => $s_data['sampletype_id'],
+                                    'testcategory_id' => $s_data['testcategory_id'],
+                                    'sampling_date' => $s_data['sampling_date'],
                                 ];
                                 array_push($sample_data, $sampleData);
                             }
 
-                            foreach ($local_analyses as $data) {
+                            foreach ($local_analyses as $a_data) {
                                 $analysisData = [
-                                    'analysis_id' => $data['pstcanalysis_id'],
-                                    'local_analysis_id' => $data['analysis_id'],
-                                    'local_sample_id' => $data['sample_id'],
+                                    'pstc_analysis_id' => $a_data['pstcanalysis_id'],
+                                    //'pstc_sample_id' => $a_data['pstc_sample_id'],
+                                    'local_analysis_id' => $a_data['analysis_id'],
+                                    'local_sample_id' => $a_data['sample_id'],
                                     'rstl_id' => $local_request->rstl_id,
-                                    'test_id' => $data['test_id'],
-                                    'testname' => $data['testname'],
-                                    'methodref_id' => $data['methodref_id'],
-                                    'method' => $data['method'],
-                                    'reference' => $data['references'],
-                                    'package_id' => $data['package_id'],
-                                    'package_name' => $data['package_name'],
-                                    'quantity' => $data['quantity'],
-                                    'fee' => $data['fee'],
+                                    'testname_id' => $a_data['test_id'],
+                                    'testname' => $a_data['testname'],
+                                    'method_id' => $a_data['methodref_id'],
+                                    'method' => $a_data['method'],
+                                    'reference' => $a_data['references'],
+                                    'package_id' => $a_data['package_id'],
+                                    'package_name' => $a_data['package_name'],
+                                    'quantity' => $a_data['quantity'],
+                                    'fee' => $a_data['fee'],
                                     'pstc_id' => $pstcId,
-                                    'date_analysis' => $data['date_analysis'],
-                                    'is_package' => $data['is_package'],
-                                    'is_package_name' => $data['is_package_name'],
-                                    'sampletype_id' => $data['sample_type_id'],
-                                    'testcategory_id' => $data['testcategory_id'],
-                                    'type_fee_id' => $data['type_fee_id'],
+                                    'date_analysis' => $a_data['date_analysis'],
+                                    'is_package' => $a_data['is_package'],
+                                    'is_package_name' => $a_data['is_package_name'],
+                                    'sampletype_id' => $a_data['sample_type_id'],
+                                    'testcategory_id' => $a_data['testcategory_id'],
+                                    'type_fee_id' => $a_data['type_fee_id'],
                                     'local_user_id' => (int) Yii::$app->user->identity->profile->user_id,
+                                    'local_request_id' => $a_data['request_id'],
                                 ];
                                 array_push($analysis_data, $analysisData);
                             }
 
-                            $pstc_request_details = Json::encode(['request_data'=>$requestData,'sample_data'=>$sample_data,'analysis_data'=>$analysisData,'local_request_id'=>$local_requestId],JSON_NUMERIC_CHECK);
+                            $pstc_request_details = Json::encode(['request_data'=>$requestData,'sample_data'=>$sample_data,'analysis_data'=>$analysis_data,'pstc_id'=>$pstcId,'rstl_id'=>$rstlId],JSON_NUMERIC_CHECK);
                             //$pstcUrl='https://eulimsapi.onelab.ph/api/web/referral/pstcrequests/updaterequest_details';
                             $pstcUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/pstcrequests/updaterequest_details';
                        
@@ -574,35 +599,42 @@ class PstcrequestController extends Controller
                                 'Content-Length' => strlen($pstc_request_details),
                             ])->post($pstcUrl);
 
-                            echo "<pre>";
-                            print_r(Json::decode($pstc_request_details,true));
-                            echo "</pre>";
-                            exit;
-
-                            if($pstc_return == 1){
+                            if($pstc_return == 1) {
                                 $transaction->commit();
                                 Yii::$app->session->setFlash('success', 'Request successfully saved!');
                                 return $this->redirect(['/lab/request/view','id'=>$local_requestId]);
                             } else {
                                 $transaction->rollBack();
-                                return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 1 failed to save!</div>";
+                                //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 1 failed to save!</div>";
+                                Yii::$app->session->setFlash('error', 'Request failed to save!');
+                                return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                             }
                         } else {
                             $transaction->rollBack();
-                            return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Failed to generate samplecode!</div>";
+                            //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Failed to generate samplecode!</div>";
+                            Yii::$app->session->setFlash('error', 'Failed to generate samplecode!');
+                            return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                         }
                     //} else {
-                    //    echo 'GG';
-                   // }
+                    //    $transaction->rollBack();
+                        //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 2 failed to save!</div>";
+                    //    Yii::$app->session->setFlash('error', 'Request failed to save!');
+                    //    return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
+                   //}
                 } else {
+                    //$requestSave = 0;
                     $transaction->rollBack();
-                    return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 2 failed to save!</div>";
+                    //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 2 failed to save!</div>";
+                    Yii::$app->session->setFlash('error', 'Request failed to save!');
+                    return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                 }
             } else {
                 //Yii::$app->session->setFlash('error', "Request failed to save!");
                 //return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                 $transaction->rollBack();
-                return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 3 failed to save!</div>";
+                //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 3 failed to save!</div>";
+                Yii::$app->session->setFlash('error', 'Request failed to save!');
+                return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
             }
         } else {
             $date = new DateTime();
@@ -763,7 +795,6 @@ class PstcrequestController extends Controller
             }
         } */
 
-        //$model = new eRequest();
         $model = new exRequestreferral();
         $connection= Yii::$app->labdb;
         $refcomponent = new ReferralComponent();
@@ -817,7 +848,7 @@ class PstcrequestController extends Controller
         //if (Yii::$app->request->post()) {
         //if ($model->load(Yii::$app->request->post()) && $model->save()) {
         if ($model->load(Yii::$app->request->post())) {
-            $post = Yii::$app->request->post('eRequest');
+            $post = Yii::$app->request->post('exRequestreferral');
             $total_fee = $total - ($subtotal * ($post['discount']/100));
 
             $model->modeofrelease_ids = implode(",", $post['modeofreleaseids']);
@@ -826,7 +857,13 @@ class PstcrequestController extends Controller
             $model->created_at = date('Y-m-d H:i:s');
             $model->rstl_id = $rstlId;
             $model->request_datetime="0000-00-00 00:00:00";
+            $model->request_type_id=2;
+            $model->pstc_id = $pstcId;
 
+            $referral_request_save = 0;
+            $requestSave = 0;
+            $sampleSave = 0;
+            $analysisSave = 0;
             if($model->save(false)) {
                 $local_requestId = $model->request_id;
                 $psct_requestdetails = json_decode($function->getRequestDetails($requestId,$rstlId,$pstcId),true);
@@ -856,15 +893,18 @@ class PstcrequestController extends Controller
                     $modelSample->rstl_id = $rstlId;
                     $modelSample->sample_month = date_format(date_create($model->request_datetime),'m');
                     $modelSample->sample_year = date_format(date_create($model->request_datetime),'Y');
-                    $modelSample->testcategory_id = 0; //pstc request, test category id is in analysis
+                    //$modelSample->testcategory_id = 0; //pstc request, test category id is in analysis
                     //$modelSample->sampletype_id = 0; //pstc request, sample type id is in analysis
                     $modelSample->samplename = $sample['sample_name'];
                     $modelSample->description = $sample['sample_description'];
+                    $modelSample->customer_description = $sample['customer_description'];
                     // $modelSample->sampling_date = $sample['sampling_date']; //to be updated
-                    $modelSample->sampling_date = date('Y-m-d H:i:s'); //to be updated
+                    $modelSample->sampling_date = empty($sample['sampling_date']) ? date('Y-m-d H:i:s') : date('Y-m-d H:i:s',strtotime($sample['sampling_date'])); //to be updated
                     $modelSample->pstcsample_id = $sample['pstc_sample_id'];
                     //$modelSample->testcategory_id = $post['testcategory_id'];
-                    $modelSample->sampletype_id = $post['sampletype_id'];
+                    //$modelSample->sampletype_id = $post['sampletype_id'];
+                    $modelSample->testcategory_id = 0;
+                    $modelSample->sampletype_id = $sample['sampletype_id'];
 
                     if($modelSample->save(false)) {
                         foreach ($sample['analyses'] as $analysis) {
@@ -881,9 +921,9 @@ class PstcrequestController extends Controller
                             $modelAnalysis->methodref_id = $analysis['method_id'];
                             $modelAnalysis->method = $analysis['method'];
                             $modelAnalysis->references = $analysis['reference'];
-                            $modelAnalysis->fee =$analysis['fee'];
-                            //$modelAnalysis->testcategory_id = $post['testcategory_id'];
-                            $modelAnalysis->sample_type_id = $post['sampletype_id'];
+                            $modelAnalysis->fee = $analysis['fee'];
+                            $modelAnalysis->testcategory_id = $analysis['testcategory_id'];
+                            $modelAnalysis->sample_type_id = $analysis['sampletype_id'];
                             $modelAnalysis->is_package = $analysis['is_package'];
                             $modelAnalysis->is_package_name = $analysis['is_package_name'];
                             $modelAnalysis->quantity = 1;
@@ -901,39 +941,67 @@ class PstcrequestController extends Controller
                     }
                 }
 
-                if($sampleSave == 1 && $analysisSave == 1 && $referral_request_save == 1) {
+                $requestSave = 1;
 
-                    $generate_code = $this->saveRequest($local_requestId,$model->lab_id,$rstlId,date('Y',strtotime($model->request_datetime)));
+                if($sampleSave == 1 && $analysisSave == 1 && $referral_request_save == 1 && $requestSave == 1) {
+
+                    //$generate_code = $this->saveRequest($local_requestId,$model->lab_id,$rstlId,date('Y',strtotime($model->request_datetime)));
                     $sample_data = [];
-                    if($generate_code == "success") {
+                    $analysis_data = [];
+                    //if($generate_code == "success") {
                         $local_samples = Sample::find()->where(['request_id'=>$local_requestId])->asArray()->all();
                         $local_request = Request::findOne($local_requestId);
+                        $local_analyses = Analysis::find()->where(['request_id'=>$local_requestId])->asArray()->all();
 
                         $requestData = [
                             'pstc_request_id' => $local_request->pstc_request_id,
                             'request_ref_num' => $local_request->request_ref_num,
                             'rstl_id' => $local_request->rstl_id,
-                            'pstc_id' => $pstcId,
+                            'pstc_id' => $local_request->pstc_id,
+                            'customer_id' => $local_request->customer_id,
                             'local_request_id' => $local_request->request_id,
                             'request_date_created' => $local_request->request_datetime,
                             'estimated_due_date' => $local_request->report_due,
                             'lab_id' => $local_request->lab_id,
-                            'discount_id' => $local_request->discount_id,
+                            'discount_id' => (int) $local_request->discount_id,
                             'discount_rate' => $local_request->discount,
-                            'sample_received_date' => $local_request->referralrequest->sample_received_date,
                         ];
 
-                        foreach ($local_samples as $data) {
+                        foreach ($local_samples as $s_data) {
                             $sampleData = [
-                                'sample_id' => $data['pstcsample_id'],
-                                'sample_code' => $data['sample_code'],
-                                'sample_month' => $data['sample_month'],
-                                'sample_year' => $data['sample_year'],
+                                'pstc_sample_id' => $s_data['pstcsample_id'],
+                                'sample_code' => $s_data['sample_code'],
+                                'sample_month' => $s_data['sample_month'],
+                                'sample_year' => $s_data['sample_year'],
+                                'rstl_id' => $local_request->rstl_id,
+                                'pstc_id' => $pstcId,
+                                'sample_description' => $s_data['description'],
+                                'customer_description' => $s_data['customer_description'],
+                                'sample_name' => $s_data['samplename'],
+                                'local_sample_id' => $s_data['sample_id'],
+                                'local_request_id' => $local_requestId,
+                                'sampletype_id' => $s_data['sampletype_id'],
+                                'testcategory_id' => $s_data['testcategory_id'],
+                                'sampling_date' => $s_data['sampling_date'],
                             ];
                             array_push($sample_data, $sampleData);
                         }
 
-                        $pstc_request_details = Json::encode(['request_data'=>$requestData,'sample_data'=>$sample_data,'local_request_id'=>$local_requestId],JSON_NUMERIC_CHECK);
+                        foreach ($local_analyses as $a_data) {
+                            $analysisData = [
+                                'pstc_analysis_id' => $a_data['pstcanalysis_id'],
+                                //'pstc_sample_id' => $a_data['pstc_sample_id'],
+                                'local_analysis_id' => $a_data['analysis_id'],
+                                'local_sample_id' => $a_data['sample_id'],
+                                'rstl_id' => $local_request->rstl_id,
+                                'type_fee_id' => $a_data['type_fee_id'],
+                                'local_user_id' => (int) Yii::$app->user->identity->profile->user_id,
+                                'local_request_id' => $a_data['request_id'],
+                            ];
+                            array_push($analysis_data, $analysisData);
+                        }
+
+                        $pstc_request_details = Json::encode(['request_data'=>$requestData,'sample_data'=>$sample_data,'analysis_data'=>$analysis_data,'pstc_id'=>$pstcId,'rstl_id'=>$rstlId],JSON_NUMERIC_CHECK);
                         //$pstcUrl='https://eulimsapi.onelab.ph/api/web/referral/pstcrequests/updaterequest_details';
                         $pstcUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/pstcrequests/updaterequest_details';
                    
@@ -944,27 +1012,35 @@ class PstcrequestController extends Controller
                             'Content-Length' => strlen($pstc_request_details),
                         ])->post($pstcUrl);
 
-                        if($pstc_return == 1){
+                        if($pstc_return == 1) {
                             $transaction->commit();
-                            Yii::$app->session->setFlash('success', 'Request successfully saved!');
+                            Yii::$app->session->setFlash('success', 'Referral request successfully saved!');
                             return $this->redirect(['/lab/request/view','id'=>$local_requestId]);
                         } else {
                             $transaction->rollBack();
-                            return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 1 failed to save!</div>";
+                            //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request failed to save!</div>";
+                            Yii::$app->session->setFlash('error', 'Referral request failed to save!');
+                            return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                         }
-                    } else {
-                        $transaction->rollBack();
-                        return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Failed to generate samplecode!</div>";
-                    }
+                    //} else {
+                    //    $transaction->rollBack();
+                        //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Failed to generate samplecode!</div>";
+                    //    Yii::$app->session->setFlash('error', 'Failed to generate samplecode!');
+                    //    return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
+                    //}
                 } else {
                     $transaction->rollBack();
-                    return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 2 failed to save!</div>";
+                    //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 2 failed to save!</div>";
+                    Yii::$app->session->setFlash('error', 'Referral request failed to save!');
+                    return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                 }
             } else {
                 //Yii::$app->session->setFlash('error', "Request failed to save!");
                 //return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
                 $transaction->rollBack();
-                return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 3 failed to save!</div>";
+                //return "<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' style='font-size:18px;'></span>&nbsp;Request 3 failed to save!</div>";
+                Yii::$app->session->setFlash('error', 'Referral request failed to save!');
+                return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
             }
         } else {
             $date = new DateTime();
@@ -989,6 +1065,7 @@ class PstcrequestController extends Controller
             $model->request_date=date("Y-m-d");
             $model->customer_id = $request['customer_id'];
             $model->conforme = $request['submitted_by'];
+            $model->sample_received_date = $request['sample_received_date'];
 
             if($profile){
                 $model->receivedBy=$profile->firstname.' '. strtoupper(substr($profile->middleinitial,0,1)).'. '.$profile->lastname;
@@ -1172,7 +1249,95 @@ class PstcrequestController extends Controller
         return ['data' => $data];
     }
 
-    protected function saveRequest($requestId,$labId,$rstlId,$year) {
+    public function actionSample_update() 
+    {
+
+        $sampleId = (int) Yii::$app->request->get('sample_id');
+        $requestId = (int) Yii::$app->request->get('request_id');
+        $pstcId = (int) Yii::$app->request->get('pstc_id');
+
+        if(isset(Yii::$app->user->identity->profile->rstl_id)){
+            $rstlId = (int) Yii::$app->user->identity->profile->rstl_id;
+        } else {
+            //return 'Session time out!';
+            return $this->redirect(['/site/login']);
+        }
+
+        if($sampleId > 0 && $requestId > 0 && $rstlId > 0) {
+
+            $function = new PstcComponent();
+            $sample_data = json_decode($function->getSampleOne($sampleId,$requestId,$rstlId,$pstcId),true);
+
+            if($sample_data[0]['is_referral'] == 1) {
+                $testcategories = [];
+                $sampletypes = ArrayHelper::map(json_decode($this->getreferralSampletype(),true),'sampletype_id','type');
+            } else {
+                $testcategories = ArrayHelper::map(Testcategory::find()->all(),'testcategory_id','category');
+                $sampletypes = ArrayHelper::map(Sampletype::find()->all(),'sampletype_id','type');
+            }
+
+            if (Yii::$app->request->post()) {
+
+                $post = Yii::$app->request->post();
+
+                $sampleData = [
+                    //'testcategory_id' => $local_request->pstc_request_id,
+                    //'sampletype_id' => $local_request->request_ref_num,
+                    'sampling_date' => empty($post['sampling_date']) ? null : date('Y-m-d H:i:s',strtotime($post['sampling_date'])),
+                    'sample_name' => $post['sample_name'],
+                    'sample_description' => $post['sample_description'],
+                    'customer_description' => $post['customer_description'],
+                    'rstl_id' => $rstlId,
+                    'pstc_id' => $pstcId,
+                    'pstc_request_id' => $requestId,
+                    'pstc_sample_id' => $sampleId,
+                ];
+
+                $pstc_sample_details = Json::encode(['sample_data'=>$sampleData],JSON_NUMERIC_CHECK);
+                //$pstcUrl='https://eulimsapi.onelab.ph/api/web/referral/pstcrequests/updaterequest_details';
+                $pstcUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/pstcrequests/update_pstcsample';
+           
+                $curl = new curl\Curl();
+                $pstc_return = $curl->setRequestBody($pstc_sample_details)
+                    ->setHeaders([
+                        'Content-Type' => 'application/json',
+                        'Content-Length' => strlen($pstc_sample_details),
+                    ])->post($pstcUrl);
+
+                if($pstc_return == 1) {
+                    Yii::$app->session->setFlash('success', 'PSTC sample successfully updated!');
+                    return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
+                } else {
+                    Yii::$app->session->setFlash('error', 'Failed to update PSTC sample!');
+                    return $this->redirect(['/pstc/pstcrequest/view','request_id'=>$requestId,'pstc_id'=>$pstcId]);
+                }
+            } else {
+                if(\Yii::$app->request->isAjax) {
+                    return $this->renderAjax('_formSample', [
+                        //'model' => $model,
+                        //'sampletemplate' => $this->listSampletemplate(),
+                        'sample_data' => $sample_data[0],
+                        'testcategory' => $testcategories, //data should be in synched in 
+                        'sampletype' => $sampletypes, //data should be in synched in ulims 
+                    ]);
+                } else {
+                     return $this->renderAjax('_formSample', [
+                        //'model' => $model,
+                        //'sampletemplate' => $this->listSampletemplate(),
+                        'sample_data' => $sample_data[0],
+                        'testcategory' => $testcategories, //data should be in synched in 
+                        'sampletype' => $sampletypes, //data should be in synched in ulims 
+                    ]);
+                }
+            }
+        } else {
+            Yii::$app->session->setFlash('error', 'Request not valid!');
+            return $this->redirect(['/pstc/pstcrequest']);   
+        }
+    }
+
+    protected function saveRequest($requestId,$labId,$rstlId,$year) 
+    {
         $post= Yii::$app->request->post();
         // echo $post['request_id'];
         //exit;
@@ -1244,5 +1409,16 @@ class PstcrequestController extends Controller
             $return="failed";
         }
         return $return;
+    }
+
+    //get referral sample type
+    protected function getreferralSampletype()
+    {
+        $apiUrl='http://localhost/eulimsapi.onelab.ph/api/web/referral/listdatas/sampletype';
+        $curl = new curl\Curl();
+        $curl->setOption(CURLOPT_CONNECTTIMEOUT, 180);
+        $curl->setOption(CURLOPT_TIMEOUT, 180);
+        $list = $curl->get($apiUrl);
+        return $list;
     }
 }

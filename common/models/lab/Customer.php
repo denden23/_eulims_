@@ -26,9 +26,7 @@ use common\components\Functions;
  * @property int $industrytype_id
  * @property int $classification_id 
  * @property int $created_at
- * @property int $customer_old_id 
- * @property int $Oldcolumn_municipalitycity_id 
- * @property int $Oldcolumn_district
+
  * @property int $sync_status
  *
  * @property Customertype $customerType
@@ -81,7 +79,7 @@ class Customer extends \yii\db\ActiveRecord
     {
         return [
             [['rstl_id', 'customer_name', 'head', 'tel', 'fax', 'email', 'business_nature_id','classification_id'], 'required'],
-            [['rstl_id', 'barangay_id', 'customer_type_id', 'business_nature_id', 'industrytype_id', 'classification_id', 'created_at'], 'integer'],
+            [['rstl_id', 'barangay_id', 'customer_type_id', 'business_nature_id', 'industrytype_id', 'classification_id'], 'integer'],
             [['latitude', 'longitude'], 'number'],
             [['customer_code'], 'string', 'max' => 11],
             [['customer_name', 'address'], 'string', 'max' => 200],
@@ -94,6 +92,19 @@ class Customer extends \yii\db\ActiveRecord
             [['classification_id'], 'exist', 'skipOnError' => true, 'targetClass' => Classification::className(), 'targetAttribute' => ['classification_id' => 'classification_id']],
         ];
     }
+
+    public function beforeSave($insert)
+    {
+        if (!parent::beforeSave($insert)) {
+            return false;
+        }
+
+        // ...custom code here...
+        $this->created_at = date("Y-m-d");
+        
+        return true;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -116,9 +127,6 @@ class Customer extends \yii\db\ActiveRecord
             'industrytype_id' => 'Industry Type',
             'classification_id' => 'Classification',
             'created_at' => 'Created At',
-            'customer_old_id' => 'Customer Old ID', 
-            'Oldcolumn_municipalitycity_id' => 'Oldcolumn Municipalitycity ID', 
-            'Oldcolumn_district' => 'Oldcolumn District', 
             'sync_status'=> 'Sync Status'
 
         ];
@@ -164,12 +172,16 @@ class Customer extends \yii\db\ActiveRecord
          // return $this->hasOne(Classification::className(), ['classification_id' => 'classification_id']);
          // $address = Barangay::findOne($this->barangay_id);
          // return $address->cityMunicipality->province->region->region.' '.$address->cityMunicipality->province->province.' '.$address->cityMunicipality->city_municipality.' '.$address->barangay;
-
-         $address = Barangay::findOne($this->barangay_id);
-         if($address)
-            return $address->municipalityCity->province->region->reg_desc.', '.$address->municipalityCity->province->prov_desc.', '.$address->municipalityCity->citymun_desc.', '.$address->brgy_desc;
-        else
-            return "none";
+        if($this->address){
+            return $this->address;
+        }
+        else{
+            $address = Barangay::findOne($this->barangay_id);
+            if($address)
+            return $address->brgy_desc.', '.$address->municipalityCity->citymun_desc.', '.$address->municipalityCity->province->prov_desc;
+            else
+                return "none";
+        }
 
     }
 }

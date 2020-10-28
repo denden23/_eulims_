@@ -308,6 +308,9 @@ SCRIPT;
                 };
             }
 SCRIPT;
+
+
+
                 $url = \yii\helpers\Url::to(['/lab/tagging/getsamplecode']);
               //  $url = '';
                 // Get the initial city description
@@ -512,7 +515,7 @@ SCRIPT;
             'options' => ['placeholder' => 'Search for a request ...','disabled'=>$disabled,'class'=>'form-control'],
             'pluginOptions' => [
                 'allowClear' => true,
-                'minimumInputLength' => 3,
+                'minimumInputLength' => 1,
                 'language' => [
                     'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
                 ],

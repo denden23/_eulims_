@@ -45,17 +45,17 @@ if(Yii::$app->user->isGuest){
 	 $unseen = $unseen_bid_notification['bid_notification'] > 0 ? $unseen_bid_notification['bid_notification'] : '';
   */
     //notification will run if the user is already logged in
-	$this->registerJs("
-		setInterval(function(e){
-			get_unresponded_notifications();
-		}, 30000);
-	");
+	// $this->registerJs("
+	// 	setInterval(function(e){
+	// 		get_unresponded_notifications();
+	// 	}, 30000);
+	// ");
 	
-	$this->registerJs("
-		setInterval(function(e){
-			get_unseen_bidnotifications();
-		}, 30000);
-	");
+	// $this->registerJs("
+	// 	setInterval(function(e){
+	// 		get_unseen_bidnotifications();
+	// 	}, 30000);
+	// ");
 }
 ?>
 <aside class="main-sidebar">
@@ -71,7 +71,14 @@ if(Yii::$app->user->isGuest){
                             $imagename = "no-image.png";
                         }else{
                             $CurrentUser = User::findOne(['user_id'=> Yii::$app->user->identity->user_id]);
-                            $imagename = $CurrentUser->profile->image_url;
+                        
+                                $imagename = $CurrentUser->profile->image_url;
+                           
+                             if ($imagename){
+                                $imagename = $CurrentUser->profile->image_url;
+                            }else{
+                                $imagename = "no-image.png";
+                            }
                         }
                      ?>  
                          <?= Html::img("/uploads/user/photo/".$imagename, [ 
@@ -112,17 +119,28 @@ if(Yii::$app->user->isGuest){
                 //'url'=>["/".strtolower($Item->PackageName)],
                 'visible'=>true
             ];
-            $unresponded=""; //comment this
-            //$ItemSubMenu[]=[];
+            $unresponded = '';
+	        $unseen = '';
+            //$unresponded=""; //comment this
+            // $ItemSubMenu[]=[];
             foreach ($MenuItems as $MenuItem => $mItem){
                 $icon=substr($mItem->icon,6,strlen($mItem->icon)-6);
                 $pkgdetails1=strtolower($mItem->Package_Detail);
                 $pkgdetails2=str_replace(" ","-",$pkgdetails1);
                 $SubmodulePermission="access-".$pkgdetails2; //access-Order of Payment
+
+
+                //delete this 3 line if we gonna use the new referral
+                $numNotification = '';
+                $template = '<a href="{url}">{label}</a>';
+                $showURL = [$mItem->url];
+                
+                //uncomment this line if we gonna use the new referral
+                /**
 				if($mItem->extra_element == 1){
 					$numNotification = '&nbsp;&nbsp;<span class="label label-danger" id="count_noti_sub_referral">'.$unresponded.'</span>';
 					$showURL = '#';
-					$template = '<a href="{url}" onclick="showNotifications()" id="btn_unresponded">{label}</a>';
+					$template = '<a href="{url}" onclick="showNotifications()" id="btn_unresponded_referral">{label}</a>';
 				} elseif ($mItem->extra_element == 2) {
 					$numNotification = '&nbsp;&nbsp;<span class="label label-danger" id="count_noti_sub_bid">'.$unseen.'</span>';
 					$showURL = '#';
@@ -132,6 +150,8 @@ if(Yii::$app->user->isGuest){
 					$template = '<a href="{url}">{label}</a>';
 					$showURL = [$mItem->url];
 				}
+
+                */
                 $ItemS=[
                    'label' =>'<img src="/images/icons/' .$mItem->icon. '.png" style="width:20px">  <span>' . $mItem->Package_Detail . $numNotification . '</span>', 
                    'icon'=>' " style="display:none;width:0px"',
@@ -213,45 +233,49 @@ if(Yii::$app->user->isGuest){
 </aside>
 <script type="text/javascript">
 	//referral notifications
-	function showNotifications(){
-		$.ajax({
-			url: '/referrals/notification/list_unresponded_notification',
-			//url: '',
-			success: function (data) {
-				$(".modal-title").html('Referral Notifications');
-				$('#modalNotification').modal('show')
-					.find('#modalBody')
-					.load('/referrals/notification/list_unresponded_notification');
-					get_unresponded_notifications();
-				$(".content-image-loader").css("display", "none");
-				$('.content-image-loader').removeClass('content-img-loader');
-			},
-			beforeSend: function (xhr) {
-				$(".content-image-loader").css("display", "block");
-				$('.content-image-loader').addClass('content-img-loader');
-			}
-		});
-	}
+	// function showNotifications(){
+	// 	$.ajax({
+	// 		url: '/referrals/notification/list_unresponded_notification',
+	// 		//url: '',
+	// 		success: function (data) {
+	// 			$(".modal-title").html('Referral Notifications');
+	// 			$('#modalNotification').modal('show')
+	// 				.find('#modalBody')
+	// 				.load('/referrals/notification/list_unresponded_notification');
+	// 				get_unresponded_notifications();
+	// 			$(".content-image-loader").css("display", "none");
+	// 			$('.content-image-loader').removeClass('content-img-loader');
+	// 		},
+	// 		beforeSend: function (xhr) {
+	// 			$(".content-image-loader").css("display", "block");
+	// 			$('.content-image-loader').addClass('content-img-loader');
+	// 		}
+	// 	});
+
+ //        return false;
+	// }
 	//bid notifications
-	function showBidNotifications(){
-		$.ajax({
-			url: '/referrals/bidnotification/list_unseen_bidnotification',
-			//url: '',
-			success: function (data) {
-				$(".modal-title").html('Bid Notifications');
-				$('#modalBidNotification').modal('show')
-					.find('#modalBody')
-					.load('/referrals/bidnotification/list_unseen_bidnotification');
-					get_unseen_bidnotifications();
-				$(".content-image-loader").css("display", "none");
-				$('.content-image-loader').removeClass('content-img-loader');
-			},
-			beforeSend: function (xhr) {
-				$(".content-image-loader").css("display", "block");
-				$('.content-image-loader').addClass('content-img-loader');
-			}
-		});
-	}
+	// function showBidNotifications(){
+	// 	$.ajax({
+	// 		url: '/referrals/bidnotification/list_unseen_bidnotification',
+	// 		//url: '',
+	// 		success: function (data) {
+	// 			$(".modal-title").html('Bid Notifications');
+	// 			$('#modalBidNotification').modal('show')
+	// 				.find('#modalBody')
+	// 				.load('/referrals/bidnotification/list_unseen_bidnotification');
+	// 				get_unseen_bidnotifications();
+	// 			$(".content-image-loader").css("display", "none");
+	// 			$('.content-image-loader').removeClass('content-img-loader');
+	// 		},
+	// 		beforeSend: function (xhr) {
+	// 			$(".content-image-loader").css("display", "block");
+	// 			$('.content-image-loader').addClass('content-img-loader');
+	// 		}
+	// 	});
+
+ //        return false;
+	// }
 	$("#btn_unresponded_referral").on('click', function(e) {
 		e.preventDefault();
 	});
